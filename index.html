@@ -24,7 +24,6 @@ body {
   cursor: pointer;
 }
 
-/* fade-in UI */
 #ui {
   position: absolute;
   width: 100%;
@@ -68,18 +67,19 @@ body {
 
 .btn-row {
   display: flex;
-  gap: 5px;
+  gap: 5px; /* ✅ requested change */
   margin-top: 10px;
 }
 
 button {
-  padding: 10px 14px;
+  padding: 8px 10px;
   border: none;
   border-radius: 10px;
   cursor: pointer;
   font-weight: bold;
   color: white;
   transition: filter 0.15s ease;
+  font-size: 13px;
 }
 
 button:hover {
@@ -120,7 +120,6 @@ button:hover {
 
 <body>
 
-<!-- changed text -->
 <div id="intro">[ click ]</div>
 
 <audio id="bgm" src="fire.mp3" loop></audio>
@@ -178,7 +177,6 @@ intro.addEventListener("click", () => {
   intro.style.display = "none";
   ui.style.display = "flex";
 
-  // trigger fade-in
   setTimeout(() => ui.classList.add("show"), 10);
 
   enabled = true;
@@ -200,6 +198,28 @@ document.addEventListener("mousemove", (e) => {
   targetY = (e.clientY / window.innerHeight - 0.5) * -strength;
 
   spawnParticle(e.clientX, e.clientY);
+});
+
+// ✅ FIXED TOUCH DRAG ROTATION
+let touchActive = false;
+
+document.addEventListener("touchstart", () => {
+  touchActive = true;
+});
+
+document.addEventListener("touchmove", (e) => {
+  if (!enabled || !touchActive) return;
+
+  e.preventDefault();
+
+  const t = e.touches[0];
+
+  targetX = (t.clientX / window.innerWidth - 0.5) * strength;
+  targetY = (t.clientY / window.innerHeight - 0.5) * -strength;
+}, { passive: false });
+
+document.addEventListener("touchend", () => {
+  touchActive = false;
 });
 
 // particles
