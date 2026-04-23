@@ -211,7 +211,7 @@ function animate() {
   for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
 
   let avg = sum / dataArray.length;
-  let scale = 0.7 + avg / 150;
+  let scale = 1 + avg / 350;
 
   panel.style.transform =
     `rotateY(${currentX}deg) rotateX(${currentY}deg) scale(${scale})`;
