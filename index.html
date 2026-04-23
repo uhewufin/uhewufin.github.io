@@ -49,7 +49,6 @@ body {
   gap: 15px;
 
   transform-style: preserve-3d;
-  transform: scale(1);
 }
 
 .image {
@@ -60,14 +59,24 @@ body {
   border: 1px solid rgba(255,255,255,0.2);
 }
 
-button {
+.btn-row {
+  display: flex;
+  gap: 8px;
   margin-top: 10px;
-  padding: 10px 16px;
+}
+
+button {
+  padding: 10px 14px;
   border: none;
   border-radius: 10px;
   background: #5566fb;
   cursor: pointer;
   font-weight: bold;
+  color: white;
+}
+
+button:hover {
+  filter: brightness(1.1);
 }
 
 .particle {
@@ -102,9 +111,15 @@ button {
     <div>
       <div style="font-size:20px;">uhewufin</div>
 
-      <button onclick="window.location.href='https://discord.com'">
-        Discord
-      </button>
+      <div class="btn-row">
+        <button onclick="window.location.href='https://discord.com/users/1341644324017799239'">
+          Discord
+        </button>
+
+        <button onclick="window.location.href='https://www.roblox.com/users/2465926493/profile'">
+          Roblox
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -128,7 +143,6 @@ source.connect(analyser);
 analyser.connect(audioCtx.destination);
 
 analyser.fftSize = 256;
-
 const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
 // START
@@ -147,7 +161,6 @@ let currentX = 0, currentY = 0;
 
 const strength = 240;
 
-// mouse
 document.addEventListener("mousemove", (e) => {
   if (!enabled) return;
 
@@ -157,7 +170,6 @@ document.addEventListener("mousemove", (e) => {
   spawnParticle(e.clientX, e.clientY);
 });
 
-// touch
 document.addEventListener("touchmove", (e) => {
   if (!enabled) return;
 
@@ -179,20 +191,16 @@ function spawnParticle(x, y) {
 
 // ANIMATION LOOP
 function animate() {
-  // smooth rotation
   currentX += (targetX - currentX) * 0.08;
   currentY += (targetY - currentY) * 0.08;
 
-  // audio volume analysis
   analyser.getByteFrequencyData(dataArray);
 
   let sum = 0;
-  for (let i = 0; i < dataArray.length; i++) {
-    sum += dataArray[i];
-  }
+  for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
 
-  let avg = sum / dataArray.length; // 0 - 255
-  let scale = 0.7 + avg / 150;        // smooth scaling effect
+  let avg = sum / dataArray.length;
+  let scale = 0.7 + avg / 150;
 
   panel.style.transform =
     `rotateY(${currentX}deg) rotateX(${currentY}deg) scale(${scale})`;
