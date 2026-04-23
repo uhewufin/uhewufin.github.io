@@ -192,7 +192,7 @@ function animate() {
   }
 
   let avg = sum / dataArray.length; // 0 - 255
-  let scale = 1 + avg / 400;        // smooth scaling effect
+  let scale = 1 + avg / 150;        // smooth scaling effect
 
   panel.style.transform =
     `rotateY(${currentX}deg) rotateX(${currentY}deg) scale(${scale})`;
