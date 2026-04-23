@@ -15,7 +15,7 @@ body {
 }
 
 .panel {
-  width: 360px;
+  width: 380px;
   height: 180px;
   background: rgba(0,255,255,0.08);
   border: 1px solid rgba(0,255,255,0.4);
@@ -26,10 +26,10 @@ body {
 
   display: flex;
   align-items: center;
-
-  transform-style: preserve-3d;
   padding: 15px;
   gap: 15px;
+
+  transform-style: preserve-3d;
 }
 
 .image {
@@ -60,12 +60,20 @@ button {
 
 <body>
 
+<!-- MUSIC -->
+<audio autoplay loop>
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
+
 <div class="panel" id="panel">
   <img class="image" src="uhewufin.png" />
 
   <div class="content">
-    <div style="font-size:20px;">3D UI Panel</div>
-    <button>Click</button>
+    <div style="font-size:20px;">uhewufin</div>
+
+    <button onclick="window.location.href='https://discord.com'">
+      Discord
+    </button>
   </div>
 </div>
 
@@ -77,11 +85,13 @@ let currentX = 0, currentY = 0;
 
 const strength = 120;
 
+// mouse
 document.addEventListener("mousemove", (e) => {
   targetX = (e.clientX / window.innerWidth - 0.5) * strength;
   targetY = (e.clientY / window.innerHeight - 0.5) * -strength;
 });
 
+// touch
 document.addEventListener("touchmove", (e) => {
   const t = e.touches[0];
   targetX = (t.clientX / window.innerWidth - 0.5) * strength;
