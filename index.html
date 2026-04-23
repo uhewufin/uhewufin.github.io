@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  background: radial-gradient(circle at center, #0b0f1a, #000);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1000px;
+  overflow: hidden;
+  font-family: sans-serif;
+}
+
+.panel {
+  width: 360px;
+  height: 180px;
+  background: rgba(0,255,255,0.08);
+  border: 1px solid rgba(0,255,255,0.4);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 30px rgba(0,255,255,0.2);
+  color: white;
+
+  display: flex;
+  align-items: center;
+
+  transform-style: preserve-3d;
+  padding: 15px;
+  gap: 15px;
+}
+
+.image {
+  width: 120px;
+  height: 120px;
+  border-radius: 16px;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+button {
+  margin-top: 10px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: cyan;
+  cursor: pointer;
+  font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="panel" id="panel">
+  <img class="image" src="uhewufin.png" />
+
+  <div class="content">
+    <div style="font-size:20px;">3D UI Panel</div>
+    <button>Click</button>
+  </div>
+</div>
+
+<script>
+const panel = document.getElementById("panel");
+
+let targetX = 0, targetY = 0;
+let currentX = 0, currentY = 0;
+
+const strength = 120;
+
+document.addEventListener("mousemove", (e) => {
+  targetX = (e.clientX / window.innerWidth - 0.5) * strength;
+  targetY = (e.clientY / window.innerHeight - 0.5) * -strength;
+});
+
+document.addEventListener("touchmove", (e) => {
+  const t = e.touches[0];
+  targetX = (t.clientX / window.innerWidth - 0.5) * strength;
+  targetY = (t.clientY / window.innerHeight - 0.5) * -strength;
+});
+
+function animate() {
+  currentX += (targetX - currentX) * 0.08;
+  currentY += (targetY - currentY) * 0.08;
+
+  panel.style.transform =
+    `rotateY(${currentX}deg) rotateX(${currentY}deg) translateZ(40px) scale(1.05)`;
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+
+</body>
+</html>
