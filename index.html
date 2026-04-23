@@ -12,7 +12,6 @@ body {
   font-family: sans-serif;
 }
 
-/* intro */
 #intro {
   position: absolute;
   width: 100%;
@@ -25,7 +24,6 @@ body {
   cursor: pointer;
 }
 
-/* UI wrapper */
 #ui {
   position: absolute;
   width: 100%;
@@ -36,7 +34,6 @@ body {
   perspective: 1000px;
 }
 
-/* panel */
 .panel {
   width: 380px;
   height: 180px;
@@ -52,9 +49,9 @@ body {
   gap: 15px;
 
   transform-style: preserve-3d;
+  transform: scale(1);
 }
 
-/* image */
 .image {
   width: 120px;
   height: 120px;
@@ -63,7 +60,6 @@ body {
   border: 1px solid rgba(255,255,255,0.2);
 }
 
-/* button */
 button {
   margin-top: 10px;
   padding: 10px 16px;
@@ -74,7 +70,6 @@ button {
   font-weight: bold;
 }
 
-/* particles */
 .particle {
   position: absolute;
   width: 6px;
@@ -96,18 +91,12 @@ button {
 
 <body>
 
-<!-- INTRO -->
 <div id="intro">[click]</div>
 
-<!-- MUSIC -->
-<audio id="bgm" loop>
-  <source src="music.mp3" type="audio/mpeg">
-</audio>
+<audio id="bgm" src="fire.mp3" loop></audio>
 
-<!-- UI -->
 <div id="ui">
   <div class="panel" id="panel">
-
     <img class="image" src="uhewufin.png" />
 
     <div>
@@ -116,9 +105,7 @@ button {
       <button onclick="window.location.href='https://discord.com'">
         Discord
       </button>
-
     </div>
-
   </div>
 </div>
 
@@ -132,16 +119,29 @@ const panel = document.getElementById("panel");
 
 let enabled = false;
 
-// start
+// AUDIO ANALYSIS
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const source = audioCtx.createMediaElementSource(bgm);
+const analyser = audioCtx.createAnalyser();
+
+source.connect(analyser);
+analyser.connect(audioCtx.destination);
+
+analyser.fftSize = 256;
+
+const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+// START
 intro.addEventListener("click", () => {
   intro.style.display = "none";
   ui.style.display = "flex";
   enabled = true;
 
+  audioCtx.resume();
   bgm.play().catch(() => {});
 });
 
-// rotation
+// ROTATION
 let targetX = 0, targetY = 0;
 let currentX = 0, currentY = 0;
 
@@ -177,13 +177,25 @@ function spawnParticle(x, y) {
   setTimeout(() => p.remove(), 600);
 }
 
-// smooth animation
+// ANIMATION LOOP
 function animate() {
+  // smooth rotation
   currentX += (targetX - currentX) * 0.08;
   currentY += (targetY - currentY) * 0.08;
 
+  // audio volume analysis
+  analyser.getByteFrequencyData(dataArray);
+
+  let sum = 0;
+  for (let i = 0; i < dataArray.length; i++) {
+    sum += dataArray[i];
+  }
+
+  let avg = sum / dataArray.length; // 0 - 255
+  let scale = 1 + avg / 400;        // smooth scaling effect
+
   panel.style.transform =
-    `rotateY(${currentX}deg) rotateX(${currentY}deg) translateZ(40px) scale(1.05)`;
+    `rotateY(${currentX}deg) rotateX(${currentY}deg) scale(${scale})`;
 
   requestAnimationFrame(animate);
 }
