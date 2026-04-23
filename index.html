@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8" />
-<title>UI Intro</title>
+<title>uhew</title>
 
 <style>
 body {
@@ -12,7 +12,7 @@ body {
   font-family: sans-serif;
 }
 
-/* intro screen */
+/* intro */
 #intro {
   position: absolute;
   width: 100%;
@@ -25,7 +25,7 @@ body {
   cursor: pointer;
 }
 
-/* UI container */
+/* UI wrapper */
 #ui {
   position: absolute;
   width: 100%;
@@ -60,6 +60,18 @@ body {
   height: 120px;
   border-radius: 16px;
   object-fit: cover;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* button */
+button {
+  margin-top: 10px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: cyan;
+  cursor: pointer;
+  font-weight: bold;
 }
 
 /* particles */
@@ -70,7 +82,6 @@ body {
   background: white;
   border-radius: 50%;
   pointer-events: none;
-  opacity: 1;
   animation: fade 0.6s linear forwards;
 }
 
@@ -96,42 +107,63 @@ body {
 <!-- UI -->
 <div id="ui">
   <div class="panel" id="panel">
+
     <img class="image" src="uhewufin.png" />
+
     <div>
       <div style="font-size:20px;">uhewufin</div>
-      <button onclick="window.location.href='https://discord.com'"
-        style="margin-top:10px;padding:10px 16px;border:none;border-radius:10px;background:cyan;font-weight:bold;">
+
+      <button onclick="window.location.href='https://discord.com'">
         Discord
       </button>
+
     </div>
+
   </div>
 </div>
 
 <script>
+document.title = "uhew";
+
 const intro = document.getElementById("intro");
 const ui = document.getElementById("ui");
 const bgm = document.getElementById("bgm");
+const panel = document.getElementById("panel");
 
-// start experience
+let enabled = false;
+
+// start
 intro.addEventListener("click", () => {
   intro.style.display = "none";
   ui.style.display = "flex";
-  bgm.play().catch(()=>{});
+  enabled = true;
+
+  bgm.play().catch(() => {});
 });
 
-// 3D motion
-const panel = document.getElementById("panel");
-
+// rotation
 let targetX = 0, targetY = 0;
 let currentX = 0, currentY = 0;
 
-const strength = 120;
+const strength = 160;
 
+// mouse
 document.addEventListener("mousemove", (e) => {
+  if (!enabled) return;
+
   targetX = (e.clientX / window.innerWidth - 0.5) * strength;
   targetY = (e.clientY / window.innerHeight - 0.5) * -strength;
 
   spawnParticle(e.clientX, e.clientY);
+});
+
+// touch
+document.addEventListener("touchmove", (e) => {
+  if (!enabled) return;
+
+  const t = e.touches[0];
+  targetX = (t.clientX / window.innerWidth - 0.5) * strength;
+  targetY = (t.clientY / window.innerHeight - 0.5) * -strength;
 });
 
 // particles
@@ -145,7 +177,7 @@ function spawnParticle(x, y) {
   setTimeout(() => p.remove(), 600);
 }
 
-// animation loop
+// smooth animation
 function animate() {
   currentX += (targetX - currentX) * 0.08;
   currentY += (targetY - currentY) * 0.08;
