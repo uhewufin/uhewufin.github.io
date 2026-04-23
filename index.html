@@ -24,6 +24,7 @@ body {
   cursor: pointer;
 }
 
+/* fade-in UI */
 #ui {
   position: absolute;
   width: 100%;
@@ -32,6 +33,12 @@ body {
   justify-content: center;
   align-items: center;
   perspective: 1000px;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+#ui.show {
+  opacity: 1;
 }
 
 .panel {
@@ -79,13 +86,17 @@ button:hover {
   filter: brightness(1.15);
 }
 
-/* different button colors */
+/* button colors */
 .discord-btn {
   background: #5566fb;
 }
 
 .roblox-btn {
   background: #335ffd;
+}
+
+.recroom-btn {
+  background: #ff5900;
 }
 
 .particle {
@@ -109,7 +120,8 @@ button:hover {
 
 <body>
 
-<div id="intro">[click]</div>
+<!-- changed text -->
+<div id="intro">[ click ]</div>
 
 <audio id="bgm" src="fire.mp3" loop></audio>
 
@@ -129,6 +141,11 @@ button:hover {
         <button class="roblox-btn"
           onclick="window.open('https://www.roblox.com/users/2465926493/profile', '_blank')">
           Roblox
+        </button>
+
+        <button class="recroom-btn"
+          onclick="window.open('https://rec.net/user/liampark2021', '_blank')">
+          Rec Room
         </button>
       </div>
     </div>
@@ -160,6 +177,10 @@ const dataArray = new Uint8Array(analyser.frequencyBinCount);
 intro.addEventListener("click", () => {
   intro.style.display = "none";
   ui.style.display = "flex";
+
+  // trigger fade-in
+  setTimeout(() => ui.classList.add("show"), 10);
+
   enabled = true;
 
   audioCtx.resume();
@@ -179,14 +200,6 @@ document.addEventListener("mousemove", (e) => {
   targetY = (e.clientY / window.innerHeight - 0.5) * -strength;
 
   spawnParticle(e.clientX, e.clientY);
-});
-
-document.addEventListener("touchmove", (e) => {
-  if (!enabled) return;
-
-  const t = e.touches[0];
-  targetX = (t.clientX / window.innerWidth - 0.5) * strength;
-  targetY = (t.clientY / window.innerHeight - 0.5) * -strength;
 });
 
 // particles
