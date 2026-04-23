@@ -69,14 +69,23 @@ button {
   padding: 10px 14px;
   border: none;
   border-radius: 10px;
-  background: #5566fb;
   cursor: pointer;
   font-weight: bold;
   color: white;
+  transition: filter 0.15s ease;
 }
 
 button:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.15);
+}
+
+/* different button colors */
+.discord-btn {
+  background: #5566fb;
+}
+
+.roblox-btn {
+  background: #335ffd;
 }
 
 .particle {
@@ -112,11 +121,13 @@ button:hover {
       <div style="font-size:20px;">uhewufin</div>
 
       <div class="btn-row">
-        <button onclick="window.location.href='https://discord.com/users/1341644324017799239'">
+        <button class="discord-btn"
+          onclick="window.open('https://discord.com/users/1341644324017799239', '_blank')">
           Discord
         </button>
 
-        <button onclick="window.location.href='https://www.roblox.com/users/2465926493/profile'">
+        <button class="roblox-btn"
+          onclick="window.open('https://www.roblox.com/users/2465926493/profile', '_blank')">
           Roblox
         </button>
       </div>
