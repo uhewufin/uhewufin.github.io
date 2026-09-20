@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LemonLoader Web</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f6f1;
+    --surface: #ffffff;
+    --ink: #16201a;
+    --muted: #5a685e;
+    --line: #dde3d9;
+    --lemon: #f2d31b;
+    --on-lemon: #1d1a00;
+    --ok: #1c8447;
+    --ok-bg: #e2f3e8;
+    --bad: #b3261e;
+    --bad-bg: #fbe9e7;
+    --font: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1512;
+      --surface: #182019;
+      --ink: #ecf1ea;
+      --muted: #93a398;
+      --line: #2a3a2f;
+      --lemon: #f2d31b;
+      --on-lemon: #1d1a00;
+      --ok: #55d68a;
+      --ok-bg: #16301f;
+      --bad: #ff8f86;
+      --bad-bg: #3a1a17;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1512;
+    --surface: #182019;
+    --ink: #ecf1ea;
+    --muted: #93a398;
+    --line: #2a3a2f;
+    --lemon: #f2d31b;
+    --on-lemon: #1d1a00;
+    --ok: #55d68a;
+    --ok-bg: #16301f;
+    --bad: #ff8f86;
+    --bad-bg: #3a1a17;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; }
+  .brand { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+  .brand i { width: 14px; height: 14px; border-radius: 50%; background: var(--lemon); display: inline-block; box-shadow: inset -3px -3px 0 rgba(0,0,0,.12); }
+  .chip { font-size: 13px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); white-space: nowrap; }
+  .chip[data-tone="ok"] { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+  .chip[data-tone="bad"] { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
+  .chip[data-tone="busy"] { color: var(--ink); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px 20px; }
+  h1 { font-size: 26px; line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 8px; font-weight: 700; }
+  h2 { font-size: 18px; margin: 0 0 12px; font-weight: 700; }
+  p { margin: 0 0 16px; color: var(--muted); max-width: 60ch; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  button {
+    font: inherit; font-weight: 500; cursor: pointer;
+    padding: 12px 20px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--ink);
+  }
+  button.primary { background: var(--lemon); color: var(--on-lemon); border-color: transparent; font-weight: 700; }
+  button.small { padding: 8px 14px; font-size: 14px; }
+  button.danger { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
+  button.link { background: none; border: 0; padding: 0; margin-bottom: 14px; color: var(--muted); text-decoration: underline; }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  body.busy .wrap button { pointer-events: none; opacity: .6; }
+
+  [data-view] { display: none; }
+  #app[data-state="idle"] [data-view="idle"],
+  #app[data-state="connecting"] [data-view="connecting"],
+  #app[data-state="connected"] [data-view="connected"],
+  #app[data-state="error"] [data-view="error"] { display: block; }
+
+  .supported { font-size: 14px; padding: 10px 12px; border-radius: 10px; background: var(--bg); color: var(--ink); margin-bottom: 16px; }
+  .roles { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 14px; padding: 12px; border-radius: 10px; border: 1px solid var(--line); margin-bottom: 16px; }
+  .roles b { font-weight: 700; }
+  .roles span { color: var(--muted); }
+  ul.before { margin: 20px 0 0; padding: 16px 0 0 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  ul.before li { margin-bottom: 6px; }
+  .pulse { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--lemon); margin-right: 8px; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+
+  /* Tabs */
+  .tabs { display: flex; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+  .tab { flex: 1; background: none; border: 0; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 0; color: var(--muted); font-weight: 500; }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--lemon); font-weight: 700; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .panel-head h1 { margin: 0; }
+
+  /* Lists */
+  .card.list { padding: 4px 16px; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .row:first-child { border-top: 0; }
+  .grow { flex: 1; min-width: 0; }
+  .ttl { margin: 0; font-weight: 500; color: var(--ink); overflow-wrap: anywhere; }
+  .sub { margin: 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+  .mono { font-family: var(--mono); }
+  .empty { color: var(--muted); padding: 16px 0; margin: 0; }
+  .badge { font-size: 13px; padding: 3px 10px; border-radius: 999px; background: var(--bg); color: var(--muted); white-space: nowrap; }
+  .badge.ok { background: var(--ok-bg); color: var(--ok); }
+  .row-btn { width: 100%; background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+  .row-btn:first-child { border-top: 0; }
+  .chev { color: var(--muted); font-size: 22px; line-height: 1; }
+
+  /* Switch */
+  .sw { position: relative; display: inline-block; width: 44px; height: 26px; flex: none; }
+  .sw input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; }
+  .sw span { position: absolute; inset: 0; border-radius: 999px; background: var(--line); transition: background .15s; pointer-events: none; }
+  .sw span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .15s; }
+  .sw input:checked + span { background: var(--ok); }
+  .sw input:checked + span::after { transform: translateX(18px); }
+  .sw input:focus-visible + span { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+  /* Add mod form */
+  .add { margin-top: 16px; }
+  .filerow { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .lbl { display: block; font-size: 14px; color: var(--muted); margin: 0 0 6px; }
+  input[type="text"] { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; margin-bottom: 10px; }
+  input[type="text"]:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+  #addBtn { width: 100%; }
+  .warn { font-size: 14px; padding: 10px 12px; border-radius: 10px; background: var(--bad-bg); color: var(--bad); margin: 0 0 14px; }
+
+  /* Progress steps */
+  .steps { list-style: none; margin: 0 0 16px; padding: 0; }
+  .steps li { display: flex; align-items: center; gap: 12px; padding: 7px 0; color: var(--muted); }
+  .steps li[data-state="running"], .steps li[data-state="done"] { color: var(--ink); }
+  .steps li[data-state="fail"] { color: var(--bad); }
+  .steps .dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--line); flex: none; }
+  .steps li[data-state="running"] .dot { border-color: var(--lemon); background: var(--lemon); animation: pulse 1.2s ease-in-out infinite; }
+  .steps li[data-state="done"] .dot { border-color: var(--ok); background: var(--ok); }
+  .steps li[data-state="fail"] .dot { border-color: var(--bad); background: var(--bad); }
+  .steps .st { font-size: 13px; color: var(--muted); }
+  .steps li[data-state="fail"] .st { color: var(--bad); }
+  @media (prefers-reduced-motion: reduce) { .steps .dot { animation: none !important; } }
+  pre.log { margin: 0 0 16px; padding: 12px; border-radius: 10px; background: var(--bg); color: var(--ink); font-family: var(--mono); font-size: 13px; line-height: 1.5; overflow-x: auto; max-height: 220px; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+  .msg { min-height: 1.5em; margin: 14px 0 0; font-size: 14px; color: var(--muted); }
+  .msg[data-tone="ok"] { color: var(--ok); }
+  .msg[data-tone="bad"] { color: var(--bad); }
+  .device-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+  .device-row span { overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><i aria-hidden="true"></i>LemonLoader Web</div>
+    <span id="chip" class="chip" role="status" aria-live="polite">Not connected</span>
+  </header>
+
+  <main id="app" data-state="idle">
+    <section class="card" data-view="idle">
+      <h1>Connect your headset</h1>
+      <p>Plug your headset into the device you're using right now, then choose Connect headset and pick your Quest from the list.</p>
+      <div class="roles">
+        <b>Host</b><span>This device, the one showing this page</span>
+        <b>Receiver</b><span>Your Quest headset</span>
+      </div>
+      <div class="supported">Supported: Quest 1, Quest 2, Quest 3, Quest 3S and Quest Pro. Other headsets aren't supported.</div>
+      <div class="actions">
+        <button id="connectBtn" class="primary" disabled>Loading&hellip;</button>
+      </div>
+      <ul class="before">
+        <li>Turn on developer mode for your headset.</li>
+        <li>Use a USB cable that carries data, not a charge-only one.</li>
+        <li>Close other ADB tools on your computer, since they hold the USB connection.</li>
+        <li>Use Chrome or Edge on a computer. Firefox and Safari don't support WebUSB.</li>
+      </ul>
+    </section>
+
+    <section class="card" data-view="connecting">
+      <h1><span class="pulse" aria-hidden="true"></span>Waiting for the headset</h1>
+      <p>Put the headset on and choose Allow on the USB debugging prompt. Tick Always allow to skip the prompt next time.</p>
+    </section>
+
+    <section data-view="connected">
+      <div class="tabs" role="tablist" aria-label="Sections">
+        <button class="tab" role="tab" id="tabPatch" aria-selected="true" aria-controls="panelPatch">Patch</button>
+        <button class="tab" role="tab" id="tabMods" aria-selected="false" aria-controls="panelMods">Mods</button>
+      </div>
+
+      <div id="panelPatch" role="tabpanel" aria-labelledby="tabPatch">
+        <div class="panel-head">
+          <h1>Compatible games</h1>
+          <button id="rescanBtn" class="small">Rescan</button>
+        </div>
+        <p>These are the IL2CPP Unity games installed on your headset. Patching itself isn't built yet; games marked Patched are ready for mods.</p>
+        <div id="patchList" class="card list"></div>
+
+        <div class="card add">
+          <h2>Test the patch agent</h2>
+          <p>Copies a small test program to the headset and runs it. It only writes one temporary file.</p>
+          <ol id="steps" class="steps" aria-live="polite"></ol>
+          <pre id="agentLog" class="log" hidden></pre>
+          <button id="testBtn" class="primary">Run agent test</button>
+        </div>
+      </div>
+
+      <div id="panelMods" role="tabpanel" aria-labelledby="tabMods" hidden>
+        <div id="modsHome">
+          <h1>Patched games</h1>
+          <p>Pick a game to manage its mods.</p>
+          <div id="gameList" class="card list"></div>
+        </div>
+
+        <div id="modsDetail" hidden>
+          <button id="backBtn" class="link">Back to games</button>
+          <h1 id="gameTitle"></h1>
+          <p class="sub mono" id="gamePkg"></p>
+          <div id="modList" class="card list"></div>
+
+          <div class="card add">
+            <h2>Add a mod</h2>
+            <div class="filerow">
+              <button id="pickBtn" type="button">Choose file</button>
+              <span id="pickedName" class="sub">No file chosen</span>
+            </div>
+            <input id="fileInput" type="file" hidden>
+            <label for="nameInput" class="lbl">Name (optional)</label>
+            <input id="nameInput" type="text" placeholder="Shown in the mod list" autocomplete="off">
+            <p class="sub" id="preview">&nbsp;</p>
+            <p class="warn" id="warn" hidden></p>
+            <button id="addBtn" class="primary" disabled>Add mod</button>
+          </div>
+        </div>
+      </div>
+
+      <p id="msg" class="msg" role="status" aria-live="polite"></p>
+
+      <div class="device-row">
+        <span id="devLine"></span>
+        <button id="disconnectBtn" class="small">Disconnect</button>
+      </div>
+    </section>
+
+    <section class="card" data-view="error">
+      <h1 id="errTitle">Couldn't connect</h1>
+      <p id="errBody"></p>
+      <div class="actions">
+        <button id="retryBtn" class="primary">Try again</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script type="module">
+  const $ = (id) => document.getElementById(id);
+  const app = $("app");
+  const chip = $("chip");
+  const connectBtn = $("connectBtn");
+
+  let libs = null;
+  let adb = null;
+
+  // Games found on the headset: { pkg, il2cpp, patched, modsDir }
+  let games = [];
+  let scan = { running: false, done: 0, total: 0, error: "" };
+  let selected = null;
+  let mods = [];
+  let modsLoading = false;
+  let confirmFile = "";
+  let busy = false;
+
+  /* ---------- small helpers ---------- */
+  function h(tag, props = {}, ...kids) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (k === "class") el.className = v;
+      else if (k === "text") el.textContent = v;
+      else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+      else if (v === true) el.setAttribute(k, "");
+      else if (v !== false && v != null) el.setAttribute(k, v);
+    }
+    for (const kid of kids.flat()) if (kid != null) el.append(kid);
+    return el;
+  }
+  const q = (s) => "'" + String(s).replace(/'/g, "'\\''") + "'";
+  const gameName = (pkg) => pkg.split(".").pop() || pkg;
+
+  function say(text, tone) {
+    const el = $("msg");
+    el.textContent = text || "";
+    el.dataset.tone = tone || "";
+  }
+
+  function setState(state, chipText, tone) {
+    app.dataset.state = state;
+    chip.textContent = chipText;
+    chip.dataset.tone = tone || "";
+  }
+  const goIdle = () => setState("idle", "Not connected");
+
+  function fail(title, body) {
+    $("errTitle").textContent = title;
+    $("errBody").textContent = body;
+    setState("error", "Failed", "bad");
+  }
+
+  async function run(fn) {
+    if (busy) return;
+    busy = true;
+    document.body.classList.add("busy");
+    try { await fn(); }
+    catch (e) { console.error(e); say(String((e && e.message) || e), "bad"); }
+    finally { busy = false; document.body.classList.remove("busy"); }
+  }
+
+  /* ---------- ADB shell + file push ---------- */
+  async function sh(cmd) {
+    const p = adb && adb.subprocess;
+    if (!p) throw new Error("This connection can't run shell commands.");
+    if (p.noneProtocol && p.noneProtocol.spawnWaitText) return await p.noneProtocol.spawnWaitText(cmd);
+    if (p.spawnAndWaitLegacy) {
+      const r = await p.spawnAndWaitLegacy(cmd);
+      return typeof r === "string" ? r : new TextDecoder().decode(r);
+    }
+    if (p.spawnAndWait) {
+      const r = await p.spawnAndWait(cmd);
+      return new TextDecoder().decode(r.stdout);
+    }
+    throw new Error("This connection can't run shell commands.");
+  }
+
+  async function pushFile(remotePath, file, permission = 0o666) {
+    const sync = await adb.sync();
+    try {
+      await sync.write({ filename: remotePath, file: file.stream(), permission });
+    } finally {
+      try {
+        if (sync.dispose) await sync.dispose();
+        else if (sync.close) await sync.close();
+      } catch (_) {}
+    }
+  }
+
+  /* ---------- scanning games ---------- */
+  async function scanGames() {
+    if (scan.running) return;
+    scan = { running: true, done: 0, total: 0, error: "" };
+    games = [];
+    renderPatch();
+    try {
+      const out = await sh("pm list packages -3 -f");
+      const list = out.split("\n")
+        .map((l) => l.trim())
+        .filter((l) => l.startsWith("package:"))
+        .map((l) => {
+          const body = l.slice(8);
+          const i = body.lastIndexOf("=");
+          return { apk: body.slice(0, i), pkg: body.slice(i + 1) };
+        })
+        .sort((a, b) => a.pkg.localeCompare(b.pkg));
+      scan.total = list.length;
+      renderPatch();
+
+      for (const item of list) {
+        try {
+          const dir = item.apk.slice(0, item.apk.lastIndexOf("/"));
+          // A zip lists its file names at the end, so only the tail needs searching.
+          const cnt = await sh(`for f in ${q(dir)}/*.apk; do tail -c 8388608 "$f"; done | grep -c libil2cpp`);
+          if (parseInt(cnt.trim(), 10) > 0) {
+            const dataDir = `/sdcard/Android/data/${item.pkg}/files`;
+            const ls = await sh(`ls -1 ${q(dataDir)} 2>/dev/null`);
+            const names = ls.split("\n").map((s) => s.trim()).filter(Boolean);
+            const patched = names.some((n) => /^(mods|melonloader|lemonloader)$/i.test(n));
+            const modsName = names.find((n) => /^mods$/i.test(n)) || "Mods";
+            games.push({ pkg: item.pkg, patched, modsDir: `${dataDir}/${modsName}` });
+          }
+        } catch (e) {
+          console.error("Skipping", item.pkg, e);
+        }
+        scan.done++;
+        renderPatch();
+      }
+    } catch (e) {
+      console.error(e);
+      scan.error = String((e && e.message) || e);
+    } finally {
+      scan.running = false;
+      renderPatch();
+      if (selected && !games.find((g) => g.pkg === selected.pkg && g.patched)) selected = null;
+      renderMods();
+    }
+  }
+
+  /* ---------- Patch tab ---------- */
+  function renderPatch() {
+    const box = $("patchList");
+    box.replaceChildren();
+    if (scan.running) {
+      box.append(h("p", {
+        class: "empty",
+        text: scan.total ? `Checking games, ${scan.done} of ${scan.total} apps done.` : "Looking for installed apps.",
+      }));
+    }
+    if (scan.error) {
+      box.append(h("p", { class: "empty", text: `Couldn't list the games: ${scan.error}` }));
+      return;
+    }
+    if (!scan.running && !games.length) {
+      box.append(h("p", { class: "empty", text: "No compatible games found. Only IL2CPP Unity games can be patched." }));
+      return;
+    }
+    for (const g of games) {
+      box.append(h("div", { class: "row" },
+        h("div", { class: "grow" },
+          h("p", { class: "ttl", text: gameName(g.pkg) }),
+          h("p", { class: "sub mono", text: g.pkg })),
+        g.patched
+          ? h("span", { class: "badge ok", text: "Patched" })
+          : h("button", { class: "small", disabled: true, title: "Patching isn't built yet", text: "Patch" })));
+    }
+  }
+
+  /* ---------- Mods tab ---------- */
+  function renderMods() {
+    const inDetail = !!selected;
+    $("modsHome").hidden = inDetail;
+    $("modsDetail").hidden = !inDetail;
+
+    if (!inDetail) {
+      const box = $("gameList");
+      box.replaceChildren();
+      const patched = games.filter((g) => g.patched);
+      if (scan.running) {
+        box.append(h("p", { class: "empty", text: "Still checking your games." }));
+      } else if (!patched.length) {
+        box.append(h("p", { class: "empty", text: "No patched games yet. A game shows up here once its Mods folder exists, so launch a patched game once to create it." }));
+      }
+      for (const g of patched) {
+        box.append(h("button", { class: "row row-btn", onclick: () => openGame(g) },
+          h("div", { class: "grow" },
+            h("p", { class: "ttl", text: gameName(g.pkg) }),
+            h("p", { class: "sub mono", text: g.pkg })),
+          h("span", { class: "chev", "aria-hidden": "true", text: "\u203A" })));
+      }
+      return;
+    }
+    $("gameTitle").textContent = gameName(selected.pkg);
+    $("gamePkg").textContent = selected.pkg;
+    renderModList();
+  }
+
+  function openGame(g) {
+    selected = g;
+    confirmFile = "";
+    mods = [];
+    say("");
+    resetAddForm();
+    renderMods();
+    run(loadMods);
+  }
+
+  function parseMod(file) {
+    let name = file;
+    let enabled = true;
+    if (name.endsWith(".disabled")) { enabled = false; name = name.slice(0, -9); }
+    const dot = name.lastIndexOf(".");
+    const ext = dot > 0 ? name.slice(dot) : "";
+    const base = dot > 0 ? name.slice(0, dot) : name;
+    const m = base.match(/^(.*)<(.+)>$/);
+    return { file, enabled, ext, stem: m ? m[1] : base, custom: m ? m[2] : "", title: m ? m[2] : base };
+  }
+
+  function buildName(stem, custom, ext) {
+    const clean = String(custom || "").replace(/[\\/:*?"<>|]/g, "").trim();
+    return clean && clean !== stem ? `${stem}<${clean}>${ext}` : `${stem}${ext}`;
+  }
+
+  async function loadMods() {
+    modsLoading = true;
+    renderModList();
+    try {
+      const out = await sh(`ls -1p ${q(selected.modsDir)} 2>/dev/null`);
+      mods = out.split("\n")
+        .map((s) => s.trim())
+        .filter((n) => n && !n.endsWith("/"))
+        .map(parseMod)
+        .sort((a, b) => a.title.localeCompare(b.title));
+    } finally {
+      modsLoading = false;
+      renderModList();
+    }
+  }
+
+  function renderModList() {
+    const box = $("modList");
+    box.replaceChildren();
+    if (modsLoading) { box.append(h("p", { class: "empty", text: "Loading mods." })); return; }
+    if (!mods.length) { box.append(h("p", { class: "empty", text: "No mods yet. Add one below." })); return; }
+    for (const m of mods) {
+      const confirming = confirmFile === m.file;
+      box.append(h("div", { class: "row" },
+        h("div", { class: "grow" },
+          h("p", { class: "ttl", text: m.title }),
+          h("p", { class: "sub mono", text: m.file })),
+        h("label", { class: "sw" },
+          h("input", {
+            type: "checkbox",
+            checked: m.enabled,
+            "aria-label": `${m.title} enabled`,
+            onchange: (e) => toggleMod(m, e.target.checked),
+          }),
+          h("span", {})),
+        h("button", {
+          class: "small" + (confirming ? " danger" : ""),
+          onclick: () => removeMod(m),
+          text: confirming ? "Confirm" : "Remove",
+        })));
+    }
+  }
+
+  function toggleMod(m, on) {
+    run(async () => {
+      const dir = selected.modsDir;
+      const from = `${dir}/${m.file}`;
+      const to = on ? `${dir}/${m.file.slice(0, -9)}` : `${dir}/${m.file}.disabled`;
+      try {
+        const out = (await sh(`mv ${q(from)} ${q(to)}`)).trim();
+        if (out) throw new Error(out);
+        say(`${m.title} ${on ? "enabled" : "disabled"}.`, "ok");
+      } finally {
+        await loadMods().catch(() => {});
+      }
+    });
+  }
+
+  function removeMod(m) {
+    if (confirmFile !== m.file) {
+      confirmFile = m.file;
+      renderModList();
+      setTimeout(() => { if (confirmFile === m.file) { confirmFile = ""; renderModList(); } }, 4000);
+      return;
+    }
+    run(async () => {
+      confirmFile = "";
+      try {
+        const out = (await sh(`rm ${q(`${selected.modsDir}/${m.file}`)}`)).trim();
+        if (out) throw new Error(out);
+        say(`Removed ${m.title}.`, "ok");
+      } finally {
+        await loadMods().catch(() => {});
+      }
+    });
+  }
+
+  /* ---------- Add mod form ---------- */
+  function targetName() {
+    const f = $("fileInput").files[0];
+    if (!f) return "";
+    const dot = f.name.lastIndexOf(".");
+    const ext = dot > 0 ? f.name.slice(dot) : "";
+    const stem = dot > 0 ? f.name.slice(0, dot) : f.name;
+    return buildName(stem, $("nameInput").value, ext);
+  }
+
+  function updatePreview() {
+    const t = targetName();
+    const f = $("fileInput").files[0];
+    $("preview").textContent = t ? `Will be saved as ${t}` : "\u00A0";
+    $("addBtn").disabled = !t;
+
+    const warn = $("warn");
+    const notDll = !!f && !/\.dll$/i.test(f.name);
+    warn.hidden = !notDll;
+    if (notDll) {
+      warn.textContent = "LemonLoader mods are .dll files. This file may not load as a mod on its own, though you can still add it.";
+    }
+  }
+
+  function resetAddForm() {
+    $("fileInput").value = "";
+    $("nameInput").value = "";
+    $("pickedName").textContent = "No file chosen";
+    updatePreview();
+  }
+
+  $("pickBtn").addEventListener("click", () => $("fileInput").click());
+  $("fileInput").addEventListener("change", () => {
+    const f = $("fileInput").files[0];
+    $("pickedName").textContent = f ? f.name : "No file chosen";
+    updatePreview();
+  });
+  $("nameInput").addEventListener("input", updatePreview);
+
+  $("addBtn").addEventListener("click", () => {
+    const file = $("fileInput").files[0];
+    if (!file || !selected) return;
+    const finalName = targetName();
+    run(async () => {
+      say(`Adding ${finalName}.`);
+      const dir = selected.modsDir;
+      const mk = (await sh(`mkdir -p ${q(dir)}`)).trim();
+      if (mk) throw new Error(mk);
+      await pushFile(`${dir}/${finalName}`, file);
+      resetAddForm();
+      say(`Added ${finalName}.`, "ok");
+      await loadMods();
+    });
+  });
+
+  $("backBtn").addEventListener("click", () => { selected = null; confirmFile = ""; say(""); renderMods(); });
+
+  /* ---------- Tabs ---------- */
+  function setTab(t) {
+    for (const [name, tab, panel] of [["patch", "tabPatch", "panelPatch"], ["mods", "tabMods", "panelMods"]]) {
+      $(tab).setAttribute("aria-selected", String(name === t));
+      $(panel).hidden = name !== t;
+    }
+    say("");
+    if (t === "mods") renderMods();
+  }
+  $("tabPatch").addEventListener("click", () => setTab("patch"));
+  $("tabMods").addEventListener("click", () => setTab("mods"));
+  $("rescanBtn").addEventListener("click", () => { if (!scan.running) scanGames(); });
+
+  /* ---------- Progress steps + agent ---------- */
+  const AGENT_URL = "agent/lemon-agent";
+  const AGENT_PATH = "/data/local/tmp/lemon-agent";
+  const TEST_STEPS = [
+    { id: "download", label: "Download the agent" },
+    { id: "copy", label: "Copy it to the headset" },
+    { id: "prepare", label: "Make it runnable" },
+    { id: "info", label: "Run it on the headset" },
+  ];
+  const STATE_TEXT = { pending: "", running: "Running", done: "Done", fail: "Failed" };
+
+  // Reusable list of steps; the same component will show real patch progress later.
+  function makeStepper(listEl, steps) {
+    const items = new Map();
+    listEl.replaceChildren();
+    const add = (s) => {
+      const st = h("span", { class: "st" });
+      const li = h("li", { "data-state": "pending" },
+        h("span", { class: "dot", "aria-hidden": "true" }),
+        h("span", { class: "grow", text: s.label || s.id }),
+        st);
+      listEl.append(li);
+      items.set(s.id, { li, st });
+    };
+    steps.forEach(add);
+    return {
+      set(id, state) {
+        if (!items.has(id)) add({ id });
+        const it = items.get(id);
+        it.li.dataset.state = state;
+        it.st.textContent = STATE_TEXT[state] || "";
+      },
+      get(id) {
+        const it = items.get(id);
+        return it ? it.li.dataset.state : "pending";
+      },
+    };
+  }
+
+  // The agent prints "@step <id> <start|done|fail> [detail]" lines; everything else is log output.
+  async function runAgent(args, stepper, logEl) {
+    const cmd = `${q(AGENT_PATH)} ${args.map(q).join(" ")} 2>&1`;
+    const result = { code: null, sawFail: false, lines: [] };
+    const onLine = (line) => {
+      const m = line.match(/^@step (\S+) (start|done|fail)(?: (.*))?$/);
+      if (m) {
+        stepper.set(m[1], m[2] === "start" ? "running" : m[2]);
+        if (m[2] === "fail") { result.sawFail = true; if (m[3]) result.lines.push(m[3]); }
+        return;
+      }
+      if (!line.trim()) return;
+      result.lines.push(line);
+      logEl.hidden = false;
+      logEl.textContent += line + "\n";
+    };
+
+    const none = adb.subprocess && adb.subprocess.noneProtocol;
+    const proc = none && none.spawn ? await none.spawn(cmd) : null;
+    const stream = proc && (proc.output || proc.stdout);
+    if (stream && stream.getReader) {
+      const reader = stream.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf("\n")) >= 0) {
+          onLine(buf.slice(0, i).replace(/\r$/, ""));
+          buf = buf.slice(i + 1);
+        }
+      }
+      if (buf) onLine(buf);
+      if (proc.exited && typeof proc.exited.then === "function") result.code = await proc.exited;
+    } else {
+      // Fallback: wait for all output, then replay it.
+      (await sh(cmd)).split("\n").forEach((l) => onLine(l.replace(/\r$/, "")));
+    }
+    return result;
+  }
+
+  async function runAgentTest() {
+    say("");
+    const st = makeStepper($("steps"), TEST_STEPS);
+    const log = $("agentLog");
+    log.textContent = "";
+    log.hidden = true;
+    let current = "download";
+    try {
+      st.set("download", "running");
+      const res = await fetch(AGENT_URL, { cache: "no-cache" });
+      if (!res.ok) {
+        throw new Error(`The agent file wasn't found (HTTP ${res.status}). It's built when the site is deployed from GitHub, so this won't work in a plain preview.`);
+      }
+      const blob = await res.blob();
+      st.set("download", "done");
+
+      current = "copy";
+      st.set("copy", "running");
+      await pushFile(AGENT_PATH, blob, 0o755);
+      st.set("copy", "done");
+
+      current = "prepare";
+      st.set("prepare", "running");
+      const out = (await sh(`chmod 755 ${q(AGENT_PATH)}`)).trim();
+      if (out) throw new Error(out);
+      st.set("prepare", "done");
+
+      current = "info";
+      const r = await runAgent(["hello"], st, log);
+      if (r.sawFail || (r.code !== null && r.code !== 0) || st.get("info") !== "done") {
+        throw new Error(r.lines.length ? r.lines[r.lines.length - 1] : "The agent didn't finish.");
+      }
+      say("The agent ran on your headset.", "ok");
+    } catch (e) {
+      st.set(current, "fail");
+      throw e;
+    }
+  }
+
+  $("testBtn").addEventListener("click", () => run(runAgentTest));
+  makeStepper($("steps"), TEST_STEPS);
+
+  /* ---------- Connecting ---------- */
+  async function loadLibs() {
+    const [a, w, c] = await Promise.all([
+      import("https://cdn.jsdelivr.net/npm/@yume-chan/adb@1/+esm"),
+      import("https://cdn.jsdelivr.net/npm/@yume-chan/adb-daemon-webusb@1/+esm"),
+      import("https://cdn.jsdelivr.net/npm/@yume-chan/adb-credential-web@1/+esm"),
+    ]);
+    libs = {
+      Adb: a.Adb,
+      AdbDaemonTransport: a.AdbDaemonTransport,
+      Manager: w.AdbDaemonWebUsbDeviceManager,
+      Store: c.default ?? c.AdbWebCredentialStore,
+    };
+  }
+
+  function describeError(e) {
+    const msg = String((e && e.message) || e || "");
+    if (/claimInterface|Unable to claim|in use|busy|access denied/i.test(msg)) {
+      return "Another program is using the headset. Close other ADB tools, or run adb kill-server on your computer, then try again.";
+    }
+    if (/auth|denied|reject/i.test(msg)) {
+      return "The headset didn't accept the connection. Put the headset on, choose Allow on the USB debugging prompt, then try again.";
+    }
+    return msg || "Something went wrong while connecting. Unplug the headset, plug it back in, and try again.";
+  }
+
+  function resetSession() {
+    adb = null;
+    games = [];
+    mods = [];
+    selected = null;
+    confirmFile = "";
+    scan = { running: false, done: 0, total: 0, error: "" };
+    say("");
+  }
+
+  async function connect() {
+    if (!navigator.usb) {
+      fail("WebUSB isn't available", "This browser can't talk to USB devices. Open this page in Chrome or Edge on a computer.");
+      return;
+    }
+    try {
+      // Must run straight from the click so the browser allows the device picker.
+      const manager = libs.Manager.BROWSER;
+      const device = await manager.requestDevice();
+      if (!device) { goIdle(); return; }
+
+      setState("connecting", "Connecting", "busy");
+      const connection = await device.connect();
+      const credentialStore = new libs.Store("LemonLoader Web");
+      const transport = await libs.AdbDaemonTransport.authenticate({
+        serial: device.serial,
+        connection,
+        credentialStore,
+      });
+      adb = new libs.Adb(transport);
+
+      let model = "";
+      try { model = String(await adb.getProp("ro.product.model")).trim(); } catch (_) {}
+      if (!model) model = (adb.banner && adb.banner.model) || device.name || "Unknown device";
+
+      $("devLine").textContent = `${model}, serial ${device.serial || "unknown"}`;
+      games = [];
+      selected = null;
+      setState("connected", "Connected", "ok");
+      setTab("patch");
+      resetAddForm();
+      scanGames();
+    } catch (e) {
+      resetSession();
+      if (e && (e.name === "NotFoundError" || /No device selected/i.test(String(e.message)))) {
+        goIdle();
+        return;
+      }
+      console.error(e);
+      fail("Couldn't connect", describeError(e));
+    }
+  }
+
+  async function disconnect() {
+    try { if (adb) await adb.close(); } catch (e) { console.error(e); }
+    resetSession();
+    goIdle();
+  }
+
+  connectBtn.addEventListener("click", connect);
+  $("retryBtn").addEventListener("click", () => { goIdle(); });
+  $("disconnectBtn").addEventListener("click", disconnect);
+
+  if (navigator.usb) {
+    navigator.usb.addEventListener("disconnect", () => {
+      if (app.dataset.state === "connected") {
+        resetSession();
+        fail("Headset disconnected", "The USB connection was lost. Plug the headset back in and connect again.");
+      }
+    });
+  }
+
+  // Load the ADB library up front so the click handler can open the picker immediately.
+  loadLibs()
+    .then(() => { connectBtn.disabled = false; connectBtn.textContent = "Connect headset"; })
+    .catch((e) => {
+      console.error(e);
+      fail("Couldn't load the connection library", "Check your internet connection and reload the page.");
+    });
+</script>
+</body>
+</html>
