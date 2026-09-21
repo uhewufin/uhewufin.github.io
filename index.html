@@ -307,6 +307,31 @@
       <h2>Good to know</h2>
       <p>Installing a patched game replaces the original, which can erase its save data. LemonLoader Web is an independent project and isn't affiliated with the LemonLoader or MelonLoader teams. It's open source on <a href="https://github.com/uhewufin/uhewufin.github.io">GitHub</a>, and the patcher is based on the LemonLoader installer.</p>
     </section>
+    <section class="card" style="margin-top:16px">
+      <h2>Frequently asked questions</h2>
+
+      <h3 style="font-size:16px;margin:16px 0 6px">My headset won't connect. What should I check?</h3>
+      <p>Work through these in order:</p>
+      <ul style="margin:0 0 16px;padding-left:18px;color:var(--muted)">
+        <li><strong>Developer mode:</strong> it has to be turned on for your headset in the Meta Horizon phone app (you may need a free developer account). Without it, the headset never shows up in the list.</li>
+        <li><strong>USB debugging prompt:</strong> after you choose Connect headset, put the headset on and choose Allow. If you chose Don't allow, unplug and replug the cable and try again.</li>
+        <li><strong>Cable and port:</strong> use a cable that carries data, not a charge-only one, and plug the headset into the device that is showing this page.</li>
+        <li><strong>Other programs:</strong> close other ADB tools on your computer, since only one program can use the connection at a time.</li>
+        <li><strong>Browser:</strong> use Chrome or Edge. Firefox and Safari don't support WebUSB.</li>
+      </ul>
+
+      <h3 style="font-size:16px;margin:16px 0 6px">Why isn't my game listed on the Patch tab?</h3>
+      <p>LemonLoader only works with Unity games built with IL2CPP. Games made with other engines, or with Unity's older Mono setup, aren't listed. A game also won't appear in the Mods tab until it has been patched and launched once.</p>
+
+      <h3 style="font-size:16px;margin:16px 0 6px">The patch failed. What went wrong?</h3>
+      <p>There are two common causes. The first is a problem on this website or with your setup: reload the page and try again, keep the headset awake and plugged in, and make sure it has free storage of at least the size of the game, because patching makes a full copy. The second is the game itself: some games protect or obfuscate their files, which can stop patching or stop LemonLoader from working. If the error mentions the Unity version or a missing file, this is the likely cause, and that game may not be patchable. If the same error keeps happening across several games, please report it on the project's GitHub page and include the error text.</p>
+
+      <h3 style="font-size:16px;margin:16px 0 6px">The game takes a long time to load after patching. Is it broken?</h3>
+      <p>Probably not. The first launch of a patched game is slow, sometimes several minutes, because LemonLoader is setting itself up for that game. Let it finish and don't force close it. The first launch can also crash, so if it does, open the game again. Later launches are much faster.</p>
+
+      <h3 style="font-size:16px;margin:16px 0 6px">Will patching a game erase my saves?</h3>
+      <p>It can. The patched copy is signed differently from the original, so Android has to remove the original game before installing it, and that can delete the game's local save data. Games that keep progress in an online account are not affected.</p>
+    </section>
   </main>
 </div>
 
