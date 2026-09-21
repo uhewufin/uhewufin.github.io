@@ -1,20 +1,14 @@
-using Org.BouncyCastle.Asn1.X509;
-using Org.BouncyCastle.Crypto.Generators;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Security;
-using Org.BouncyCastle.X509;
 using System;
-using System.IO;
-using Org.BouncyCastle.Math;
-using Org.BouncyCastle.X509.Extension;
-using Org.BouncyCastle.Crypto.Operators;
-using Org.BouncyCastle.OpenSsl;
 
 namespace MelonLoader.Installer.Core.PatchSteps;
 
+/// <summary>
+/// Uses the installer's built-in signing certificate. Generating a fresh one needs BouncyCastle,
+/// which doesn't work in this AOT-compiled agent, so every patch is signed with this certificate for now.
+/// </summary>
 internal class GenerateCertificate : IPatchStep
 {
-    private const string FALLBACK_CERT = @"-----BEGIN CERTIFICATE-----
+    private const string BUILT_IN_CERT = @"-----BEGIN CERTIFICATE-----
 MIICNTCCAZ6gAwIBAgIUeXP9Gyg714ZW2GVMXKbZzAKZIhEwDQYJKoZIhvcNAQEL
 BQAwFjEUMBIGA1UEAwwLbGVtb25fbWVsb24wIBcNMjMwNjA2MDU1NjI2WhgPMzAy
 MTEwMDcwNTU2MjZaMBYxFDASBgNVBAMMC2xlbW9uX21lbG9uMIGfMA0GCSqGSIb3
@@ -46,61 +40,8 @@ IAE6kTSMMHC6bVbrbS/CC8hRW8m7yD3LUa1EjFJmRWXsCQ==
 
     public bool Run(Patcher patcher)
     {
-        try
-        {
-            return RunGenerate(patcher);
-        }
-        catch (Exception ex)
-        {
-            patcher.Logger.Log("Generation failed, using fallback\n" + ex);
-            patcher.Info.PemData = FALLBACK_CERT;
-            return true;
-        }
-    }
-
-    private static bool RunGenerate(Patcher patcher)
-    {
-        patcher.Logger.Log("Generating certificate");
-
-        RsaKeyPairGenerator kpg = new();
-        kpg.Init(new KeyGenerationParameters(SecureRandom.GetInstance("SHA256PRNG"), 1024));
-
-        AsymmetricCipherKeyPair keyPair = kpg.GenerateKeyPair();
-
-        X509V3CertificateGenerator certificateGenerator = new();
-        BigInteger serialNumber = BigInteger.ProbablePrime(120, new Random());
-        X509Name issuerDN = new("CN=lemon");
-        X509Name subjectDN = new("CN=lemon");
-        certificateGenerator.SetSerialNumber(serialNumber);
-        certificateGenerator.SetIssuerDN(issuerDN);
-        certificateGenerator.SetSubjectDN(subjectDN);
-        certificateGenerator.SetNotBefore(DateTime.UtcNow.Date.AddYears(-999));
-        certificateGenerator.SetNotAfter(DateTime.UtcNow.Date.AddYears(999));
-        certificateGenerator.SetPublicKey(keyPair.Public);
-
-        SubjectKeyIdentifierStructure subjectKeyIdentifierExtension = new(keyPair.Public);
-        certificateGenerator.AddExtension(X509Extensions.SubjectKeyIdentifier.Id, false, subjectKeyIdentifierExtension);
-        certificateGenerator.AddExtension(X509Extensions.BasicConstraints.Id, true, new BasicConstraints(false));
-
-        Asn1SignatureFactory signatureFactory = new("SHA256WITHRSA", keyPair.Private);
-        X509Certificate certificate = certificateGenerator.Generate(signatureFactory);
-
-        if (certificate == null)
-        {
-            patcher.Logger.Log("Generation failed, using fallback");
-            patcher.Info.PemData = FALLBACK_CERT;
-            return true;
-        }
-
-        using StringWriter stringWriter = new();
-        PemWriter pemWriter = new(stringWriter);
-
-        pemWriter.WriteObject(new Org.BouncyCastle.Utilities.IO.Pem.PemObject("CERTIFICATE", certificate.GetEncoded()));
-        pemWriter.WriteObject(keyPair.Private);
-        patcher.Info.PemData = stringWriter.ToString();
-
-        patcher.Logger.Log("Done");
-
+        patcher.Logger.Log("Using the built-in signing certificate");
+        patcher.Info.PemData = BUILT_IN_CERT;
         return true;
     }
 }
