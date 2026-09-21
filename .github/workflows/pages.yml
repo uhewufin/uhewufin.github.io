@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"   # weekly, to pick up new LemonLoader releases
 
 permissions:
   contents: read
@@ -39,12 +41,27 @@ jobs:
           -p:PublishAotUsingRuntimePack=true
           -o out/agent
 
+      # Browsers usually can't download GitHub release files directly, so the site hosts a copy.
+      - name: Fetch the LemonLoader files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(gh api repos/LemonLoader/MelonLoader/releases --paginate \
+            --jq '.[] | select(any(.assets[]?; .name | startswith("melon_data"))) | .tag_name' | sed -n 1p)
+          echo "Using LemonLoader release: $TAG"
+          test -n "$TAG"
+          mkdir -p payload_dl site/payload
+          gh release download "$TAG" --repo LemonLoader/MelonLoader --pattern 'melon_data*' --dir payload_dl
+          ls -l payload_dl
+          cp "$(ls payload_dl/melon_data* | sed -n 1p)" site/payload/melon_data.zip
+          echo "$TAG" > site/payload/version.txt
+
       - name: Assemble the site
         run: |
           mkdir -p site/agent
           cp index.html site/index.html
           cp out/agent/lemon-agent site/agent/lemon-agent
-          ls -l site site/agent
+          ls -lR site
 
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -59,4 +76,3 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
-        
