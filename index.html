@@ -945,10 +945,10 @@
     let current = "uninstall";
     try {
       st.set("uninstall", "running");
-      // -k keeps the app's data/cache directories, so save data survives where the game supports it.
-      const uOut = (await sh(`pm uninstall -k ${q(g.pkg)}`)).trim();
-      if (uOut && !/success/i.test(uOut) && !/not installed|unknown package/i.test(uOut)) {
-        throw new Error(uOut);
+      const stillInstalled = (await sh(`pm path ${q(g.pkg)}`)).includes("package:");
+      if (stillInstalled) {
+        const uOut = (await sh(`pm uninstall ${q(g.pkg)}`)).trim();
+        if (!/success/i.test(uOut)) throw new Error(uOut || "Couldn't remove the installed game.");
       }
       st.set("uninstall", "done");
 
@@ -957,11 +957,29 @@
       const list = (await sh(`ls -1 ${q(outputDir)}/*.apk 2>/dev/null`))
         .split("\n").map((s) => s.trim()).filter(Boolean);
       if (!list.length) throw new Error("No patched APK files were found. Patch the game again.");
+
+      let total = 0;
+      const sizes = [];
+      for (const p of list) {
+        const size = parseInt((await sh(`stat -c %s ${q(p)}`)).trim(), 10);
+        sizes.push(size);
+        total += size;
+      }
+      const created = await sh(`pm install-create -r -S ${total}`);
+      const sid = (created.match(/\[(\d+)\]/) || [])[1];
+      if (!sid) throw new Error(created.trim() || "Couldn't start the install.");
+      for (let i = 0; i < list.length; i++) {
+        const w = (await sh(`pm install-write -S ${sizes[i]} ${sid} ${q(`${i}_${list[i].split("/").pop()}`)} ${q(list[i])}`)).trim();
+        if (!/success/i.test(w)) {
+          await sh(`pm install-abandon ${sid}`).catch(() => {});
+          throw new Error(w || "Couldn't copy the game into the install.");
+        }
+      }
       const iOut = (await sh(`pm install-commit ${sid}`)).trim();
       if (!/success/i.test(iOut)) throw new Error(iOut || "Install failed.");
       st.set("install", "done");
 
-      say(`Installed the patched ${gameName(g.pkg)}.`, "ok");
+      say(`Installed the patched ${gameName(g.pkg)}. Open it once so LemonLoader can set itself up. The first launch is slow and can crash, so if it does, just open it again.`, "ok");
     } catch (e) {
       st.set(current, "fail");
       $("installErr").textContent = String((e && e.message) || e);
@@ -969,7 +987,7 @@
       throw e;
     }
   }
-
+  
   $("installBtn").addEventListener("click", () => run(() => installGame(lastPatchedGame)));
 
   $("testBtn").addEventListener("click", () => run(runAgentTest));
