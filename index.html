@@ -957,7 +957,7 @@
       const list = (await sh(`ls -1 ${q(outputDir)}/*.apk 2>/dev/null`))
         .split("\n").map((s) => s.trim()).filter(Boolean);
       if (!list.length) throw new Error("No patched APK files were found. Patch the game again.");
-      const iOut = (await sh(`pm install-multiple -r -d ${list.map(q).join(" ")}`)).trim();
+      const iOut = (await sh(`pm install-commit ${sid}`)).trim();
       if (!/success/i.test(iOut)) throw new Error(iOut || "Install failed.");
       st.set("install", "done");
 
