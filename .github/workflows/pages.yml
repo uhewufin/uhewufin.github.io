@@ -56,6 +56,21 @@ jobs:
           cp "$(ls payload_dl/melon_data* | sed -n 1p)" site/payload/melon_data.zip
           echo "$TAG" > site/payload/version.txt
 
+      # One Unity version per line in libunity-versions.txt; each is copied onto the site.
+      - name: Fetch the Unity libraries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p site/libunity
+          sed -e 's/#.*//' -e 's/[[:space:]]//g' -e '/^$/d' libunity-versions.txt | while read -r VER; do
+            echo "Fetching libunity for $VER"
+            mkdir -p "site/libunity/$VER"
+            gh release download "$VER" --repo LavaGang/MelonLoader.UnityDependencies \
+              --pattern 'libunity.so.arm64-v8a' --dir "site/libunity/$VER" \
+              || echo "Could not fetch libunity for $VER, skipping"
+          done
+          ls -lR site/libunity
+
       - name: Assemble the site
         run: |
           mkdir -p site/agent
