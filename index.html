@@ -223,7 +223,13 @@
           <ol id="patchSteps" class="steps" aria-live="polite"></ol>
           <p class="warn" id="patchErr" hidden></p>
           <pre id="patchLog" class="log" hidden></pre>
-          <button id="discardBtn" class="small" hidden>Delete the patched files</button>
+          <div class="actions">
+            <button id="installBtn" class="primary small" hidden>Install (replaces the current app)</button>
+            <button id="discardBtn" class="small" hidden>Delete the patched files</button>
+          </div>
+          <p class="sub" id="installNote" hidden>This removes the currently installed app and installs the patched copy in its place. Save data is kept where the game supports it.</p>
+          <ol id="installSteps" class="steps" aria-live="polite"></ol>
+          <p class="warn" id="installErr" hidden></p>
         </div>
 
         <div class="card add">
@@ -795,6 +801,12 @@
   ];
   const LEMON_DIR = "/data/local/tmp/lemon";
   let lastWorkDir = "";
+  let lastPatchedGame = null;
+
+  const INSTALL_STEPS = [
+    { id: "uninstall", label: "Remove the old app" },
+    { id: "install", label: "Install the patched app" },
+  ];
 
   async function fetchBlob(url) {
     const res = await fetch(url, { cache: "no-cache" });
@@ -824,6 +836,10 @@
     $("patchTitle").textContent = `Patching ${gameName(g.pkg)}`;
     $("patchErr").hidden = true;
     $("discardBtn").hidden = true;
+    $("installBtn").hidden = true;
+    $("installNote").hidden = true;
+    $("installErr").hidden = true;
+    makeStepper($("installSteps"), []);
     const log = $("patchLog");
     log.textContent = "";
     log.hidden = true;
@@ -890,6 +906,7 @@
       args.push("--package", g.pkg, "--work", work,
         "--melon-data", `${inputs}/melon_data.zip`, "--libunity", `${inputs}/libunity.so`);
       lastWorkDir = work;
+      lastPatchedGame = g;
       const r = await runAgent(args, st, log);
       await sh(`rm -f ${q(`${inputs}/melon_data.zip`)} ${q(`${inputs}/libunity.so`)}`).catch(() => {});
       if (r.sawFail || !r.meta.output || (r.code !== null && r.code !== 0)) {
@@ -897,6 +914,8 @@
       }
 
       $("discardBtn").hidden = false;
+      $("installBtn").hidden = false;
+      $("installNote").hidden = false;
       say(`Done. The patched game is on your headset at ${r.meta.output}. It isn't installed yet.`, "ok");
     } catch (e) {
       if (st.get(current) !== "done") st.set(current, "fail");
@@ -911,8 +930,47 @@
     const out = (await sh(`rm -rf ${q(lastWorkDir)}`)).trim();
     if (out) throw new Error(out);
     $("discardBtn").hidden = true;
+    $("installBtn").hidden = true;
+    $("installNote").hidden = true;
     say("Deleted the patched files.", "ok");
   }));
+
+  // The patched APK is re-signed with a new certificate, so Android won't install it
+  // over the original app (signature mismatch) until the original is removed first.
+  async function installGame(g) {
+    if (!lastWorkDir) throw new Error("The patched files are gone. Patch the game again first.");
+    const outputDir = `${lastWorkDir}/output`;
+    $("installErr").hidden = true;
+    const st = makeStepper($("installSteps"), INSTALL_STEPS);
+    let current = "uninstall";
+    try {
+      st.set("uninstall", "running");
+      // -k keeps the app's data/cache directories, so save data survives where the game supports it.
+      const uOut = (await sh(`pm uninstall -k ${q(g.pkg)}`)).trim();
+      if (uOut && !/success/i.test(uOut) && !/not installed|unknown package/i.test(uOut)) {
+        throw new Error(uOut);
+      }
+      st.set("uninstall", "done");
+
+      current = "install";
+      st.set("install", "running");
+      const list = (await sh(`ls -1 ${q(outputDir)}/*.apk 2>/dev/null`))
+        .split("\n").map((s) => s.trim()).filter(Boolean);
+      if (!list.length) throw new Error("No patched APK files were found. Patch the game again.");
+      const iOut = (await sh(`pm install-multiple -r -d ${list.map(q).join(" ")}`)).trim();
+      if (!/success/i.test(iOut)) throw new Error(iOut || "Install failed.");
+      st.set("install", "done");
+
+      say(`Installed the patched ${gameName(g.pkg)}.`, "ok");
+    } catch (e) {
+      st.set(current, "fail");
+      $("installErr").textContent = String((e && e.message) || e);
+      $("installErr").hidden = false;
+      throw e;
+    }
+  }
+
+  $("installBtn").addEventListener("click", () => run(() => installGame(lastPatchedGame)));
 
   $("testBtn").addEventListener("click", () => run(runAgentTest));
   makeStepper($("steps"), TEST_STEPS);
