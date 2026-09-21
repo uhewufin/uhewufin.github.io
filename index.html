@@ -214,8 +214,17 @@
           <h1>Compatible games</h1>
           <button id="rescanBtn" class="small">Rescan</button>
         </div>
-        <p>These are the IL2CPP Unity games installed on your headset. Patching itself isn't built yet; games marked Patched are ready for mods.</p>
+        <p>These are the IL2CPP Unity games installed on your headset. Patching makes a patched copy on the headset but doesn't install it yet. Games marked Patched are ready for mods.</p>
         <div id="patchList" class="card list"></div>
+
+        <div class="card add" id="patchCard" hidden>
+          <h2 id="patchTitle">Patching</h2>
+          <p class="sub">This makes a patched copy of the game on your headset. Your installed game isn't touched and nothing is installed yet. Keep the headset awake and the cable connected.</p>
+          <ol id="patchSteps" class="steps" aria-live="polite"></ol>
+          <p class="warn" id="patchErr" hidden></p>
+          <pre id="patchLog" class="log" hidden></pre>
+          <button id="discardBtn" class="small" hidden>Delete the patched files</button>
+        </div>
 
         <div class="card add">
           <h2>Test the patch agent</h2>
@@ -438,7 +447,7 @@
           h("p", { class: "sub mono", text: g.pkg })),
         g.patched
           ? h("span", { class: "badge ok", text: "Patched" })
-          : h("button", { class: "small", disabled: true, title: "Patching isn't built yet", text: "Patch" })));
+          : h("button", { class: "small", onclick: () => run(() => patchGame(g)), text: "Patch" })));
     }
   }
 
@@ -686,10 +695,13 @@
   // The agent prints "@step <id> <start|done|fail> [detail]" lines; everything else is log output.
   async function runAgent(args, stepper, logEl) {
     const cmd = `${q(AGENT_PATH)} ${args.map(q).join(" ")} 2>&1`;
-    const result = { code: null, sawFail: false, lines: [] };
+    const result = { code: null, sawFail: false, lines: [], meta: {} };
     const onLine = (line) => {
+      const meta = line.match(/^@(unity|output|result) (.*)$/);
+      if (meta) { result.meta[meta[1]] = meta[2]; return; }
       const m = line.match(/^@step (\S+) (start|done|fail)(?: (.*))?$/);
       if (m) {
+        if (m[2] === "start" && stepper.get(m[1]) === "done") return;
         stepper.set(m[1], m[2] === "start" ? "running" : m[2]);
         if (m[2] === "fail") { result.sawFail = true; if (m[3]) result.lines.push(m[3]); }
         return;
@@ -765,6 +777,138 @@
     }
   }
 
+  /* ---------- Patching a game ---------- */
+  const PATCH_STEPS = [
+    { id: "agent", label: "Set up the patch agent" },
+    { id: "find-apk", label: "Find the game's files" },
+    { id: "unity-version", label: "Read the Unity version" },
+    { id: "download", label: "Download the loader files" },
+    { id: "upload", label: "Copy them to the headset" },
+    { id: "copy-apk", label: "Copy the game files" },
+    { id: "unity-libs", label: "Prepare the Unity libraries" },
+    { id: "loader-files", label: "Unpack the loader" },
+    { id: "manifest", label: "Update the manifest" },
+    { id: "repack", label: "Add the loader to the game" },
+    { id: "certificate", label: "Create a signing certificate" },
+    { id: "sign", label: "Align and sign" },
+    { id: "cleanup", label: "Clean up" },
+  ];
+  const LEMON_DIR = "/data/local/tmp/lemon";
+  let lastWorkDir = "";
+
+  async function fetchBlob(url) {
+    const res = await fetch(url, { cache: "no-cache" });
+    if (!res.ok) {
+      const err = new Error(`HTTP ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
+    return await res.blob();
+  }
+
+  async function installAgent() {
+    let blob;
+    try { blob = await fetchBlob(AGENT_URL); }
+    catch (e) {
+      throw new Error(`The agent file wasn't found (${e.message}). It's built when the site is deployed from GitHub.`);
+    }
+    await pushFile(AGENT_PATH, blob, 0o755);
+    const out = (await sh(`chmod 755 ${q(AGENT_PATH)}`)).trim();
+    if (out) throw new Error(out);
+  }
+
+  async function patchGame(g) {
+    say("");
+    const card = $("patchCard");
+    card.hidden = false;
+    $("patchTitle").textContent = `Patching ${gameName(g.pkg)}`;
+    $("patchErr").hidden = true;
+    $("discardBtn").hidden = true;
+    const log = $("patchLog");
+    log.textContent = "";
+    log.hidden = true;
+    const st = makeStepper($("patchSteps"), PATCH_STEPS);
+    card.scrollIntoView({ block: "start" });
+
+    const inputs = `${LEMON_DIR}/inputs`;
+    const work = `${LEMON_DIR}/work/${g.pkg}`;
+    let current = "agent";
+
+    try {
+      st.set("agent", "running");
+      await installAgent();
+      st.set("agent", "done");
+
+      current = "find-apk";
+      st.set("find-apk", "running");
+      const paths = (await sh(`pm path ${q(g.pkg)}`))
+        .split("\n").map((s) => s.trim()).filter((s) => s.startsWith("package:")).map((s) => s.slice(8));
+      if (!paths.length) throw new Error("Couldn't find the game's APK files.");
+      st.set("find-apk", "done");
+
+      current = "unity-version";
+      const d = await runAgent(["detect", "--apk", paths[0]], st, log);
+      if (d.sawFail || st.get("unity-version") !== "done" || !d.meta.unity) {
+        throw new Error(d.lines.length ? d.lines[d.lines.length - 1] : "Couldn't read the Unity version.");
+      }
+      const [version, kind] = d.meta.unity.split(" ");
+
+      current = "download";
+      st.set("download", "running");
+      let melon;
+      try { melon = await fetchBlob("payload/melon_data.zip"); }
+      catch (e) {
+        throw new Error(`The loader files weren't found on the site (${e.message}). They're added when the site is deployed from GitHub.`);
+      }
+      const repo = kind === "china"
+        ? "LemonLoader/MelonLoader.UnityDependencies.China"
+        : "LavaGang/MelonLoader.UnityDependencies";
+      const libUrl = `https://github.com/${repo}/releases/download/${version}/libunity.so.arm64-v8a`;
+      let lib;
+      try { lib = await fetchBlob(libUrl); }
+      catch (e) {
+        throw new Error(`Your browser couldn't download the Unity library for ${version} from GitHub (${e.message}). Browsers often block these downloads. File: ${libUrl}`);
+      }
+      st.set("download", "done");
+
+      current = "upload";
+      st.set("upload", "running");
+      const mk = (await sh(`mkdir -p ${q(inputs)}`)).trim();
+      if (mk) throw new Error(mk);
+      await pushFile(`${inputs}/melon_data.zip`, melon);
+      await pushFile(`${inputs}/libunity.so`, lib);
+      st.set("upload", "done");
+
+      current = "copy-apk";
+      const args = ["patch"];
+      for (const p of paths) args.push("--apk", p);
+      args.push("--package", g.pkg, "--work", work,
+        "--melon-data", `${inputs}/melon_data.zip`, "--libunity", `${inputs}/libunity.so`);
+      lastWorkDir = work;
+      const r = await runAgent(args, st, log);
+      await sh(`rm -f ${q(`${inputs}/melon_data.zip`)} ${q(`${inputs}/libunity.so`)}`).catch(() => {});
+      if (r.sawFail || !r.meta.output || (r.code !== null && r.code !== 0)) {
+        throw new Error(r.lines.length ? r.lines[r.lines.length - 1] : "Patching didn't finish.");
+      }
+
+      $("discardBtn").hidden = false;
+      say(`Done. The patched game is on your headset at ${r.meta.output}. It isn't installed yet.`, "ok");
+    } catch (e) {
+      if (st.get(current) !== "done") st.set(current, "fail");
+      $("patchErr").textContent = String((e && e.message) || e);
+      $("patchErr").hidden = false;
+      throw e;
+    }
+  }
+
+  $("discardBtn").addEventListener("click", () => run(async () => {
+    if (!lastWorkDir) return;
+    const out = (await sh(`rm -rf ${q(lastWorkDir)}`)).trim();
+    if (out) throw new Error(out);
+    $("discardBtn").hidden = true;
+    say("Deleted the patched files.", "ok");
+  }));
+
   $("testBtn").addEventListener("click", () => run(runAgentTest));
   makeStepper($("steps"), TEST_STEPS);
 
@@ -838,7 +982,7 @@
       scanGames();
     } catch (e) {
       resetSession();
-      if (e && (e.name === "NotFoundError" || /No device selected/i.test(String(e.message)))) {
+        if (e && (e.name === "NotFoundError" || /No device selected/i.test(String(e.message)))) {
         goIdle();
         return;
       }
