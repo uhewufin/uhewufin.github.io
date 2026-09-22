@@ -73,7 +73,7 @@ static int Detect(Dictionary<string, List<string>> options)
     }
 
     string kind = version.Value.Type == UnityVersionType.China ? "china" : "global";
-    Console.WriteLine($"@unity {version.Value.ToStringWithoutType()} {kind}");
+    Console.WriteLine($"@unity {version.Value} {version.Value.ToStringWithoutType()} {kind}");
     Step("unity-version", "done");
     return 0;
 }
