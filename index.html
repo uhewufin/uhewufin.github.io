@@ -271,6 +271,32 @@
         </div>
       </div>
 
+      <div id="panelLogs" role="tabpanel" aria-labelledby="tabLogs" hidden>
+        <h1>Logs</h1>
+        <p>Streams your headset's logcat. Useful for seeing why a game crashed or hung.</p>
+
+        <div class="tabs" role="tablist" aria-label="Log filter" style="margin-bottom:14px">
+          <button class="tab" role="tab" id="logModeAll" aria-selected="true">All</button>
+          <button class="tab" role="tab" id="logModePkg" aria-selected="false">Package</button>
+          <button class="tab" role="tab" id="logModePid" aria-selected="false">PID</button>
+        </div>
+
+        <div id="logPkgRow" class="filerow" hidden>
+          <select id="logPkgSelect" style="flex:1"></select>
+        </div>
+        <div id="logPidRow" class="filerow" hidden>
+          <input type="text" id="logPidInput" inputmode="numeric" placeholder="Process ID, e.g. 12345" style="flex:1">
+        </div>
+
+        <div class="actions" style="margin-bottom:14px">
+          <button id="logStartBtn" class="primary small">Start</button>
+          <button id="logStopBtn" class="small" hidden>Stop</button>
+          <button id="logClearBtn" class="small">Clear</button>
+        </div>
+
+        <pre id="logBox" class="log" style="max-height:min(60vh,480px)"></pre>
+      </div>
+      
       <p id="msg" class="msg" role="status" aria-live="polite"></p>
 
       <div class="device-row">
