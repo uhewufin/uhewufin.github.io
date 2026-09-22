@@ -733,6 +733,116 @@
   $("tabMods").addEventListener("click", () => setTab("mods"));
   $("rescanBtn").addEventListener("click", () => { if (!scan.running) scanGames(); });
 
+  /* ---------- Logs tab ---------- */
+  let logProc = null;
+  let logMode = "all";
+
+  function logBoxAppend(line) {
+    const box = $("logBox");
+    const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+    box.textContent += line + "\n";
+    if (box.textContent.length > 400000) box.textContent = box.textContent.slice(-300000);
+    if (atBottom) box.scrollTop = box.scrollHeight;
+  }
+
+  function setLogMode(mode) {
+    logMode = mode;
+    $("logModeAll").setAttribute("aria-selected", String(mode === "all"));
+    $("logModePkg").setAttribute("aria-selected", String(mode === "pkg"));
+    $("logModePid").setAttribute("aria-selected", String(mode === "pid"));
+    $("logPkgRow").hidden = mode !== "pkg";
+    $("logPidRow").hidden = mode !== "pid";
+  }
+  $("logModeAll").addEventListener("click", () => setLogMode("all"));
+  $("logModePkg").addEventListener("click", () => setLogMode("pkg"));
+  $("logModePid").addEventListener("click", () => setLogMode("pid"));
+
+  function fillLogPackages() {
+    const sel = $("logPkgSelect");
+    const prev = sel.value;
+    sel.replaceChildren();
+    for (const g of games) sel.append(h("option", { value: g.pkg, text: gameName(g.pkg) }));
+    if ([...sel.options].some((o) => o.value === prev)) sel.value = prev;
+  }
+
+  async function pidForPackage(pkg) {
+    const out = (await sh(`pidof ${q(pkg)}`)).trim();
+    const pid = out.split(/\s+/)[0];
+    if (!pid || !/^\d+$/.test(pid)) throw new Error(`${gameName(pkg)} doesn't seem to be running right now.`);
+    return pid;
+  }
+
+  async function startLogcat() {
+    if (logProc) return;
+    $("logStartBtn").hidden = true;
+    $("logStopBtn").hidden = false;
+    logBoxAppend(`--- starting (${logMode}) ---`);
+
+    let cmd = "logcat -v brief";
+    try {
+      if (logMode === "pkg") {
+        const pkg = $("logPkgSelect").value;
+        if (!pkg) throw new Error("Pick a game first.");
+        const pid = await pidForPackage(pkg);
+        cmd = `logcat -v brief --pid=${pid}`;
+      } else if (logMode === "pid") {
+        const pid = $("logPidInput").value.trim();
+        if (!/^\d+$/.test(pid)) throw new Error("Enter a numeric process ID.");
+        cmd = `logcat -v brief --pid=${pid}`;
+      }
+    } catch (e) {
+      logBoxAppend(String((e && e.message) || e));
+      $("logStartBtn").hidden = false;
+      $("logStopBtn").hidden = true;
+      return;
+    }
+
+    const none = adb.subprocess && adb.subprocess.noneProtocol;
+    if (!none || !none.spawn) {
+      logBoxAppend("This connection can't stream logs.");
+      $("logStartBtn").hidden = false;
+      $("logStopBtn").hidden = true;
+      return;
+    }
+
+    const proc = await none.spawn(cmd);
+    logProc = proc;
+    const stream = proc.output || proc.stdout;
+    const reader = stream.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf("\n")) >= 0) {
+          logBoxAppend(buf.slice(0, i).replace(/\r$/, ""));
+          buf = buf.slice(i + 1);
+        }
+      }
+    } catch (e) {
+      logBoxAppend(`--- stream error: ${(e && e.message) || e} ---`);
+    } finally {
+      if (buf) logBoxAppend(buf);
+      logBoxAppend("--- stopped ---");
+      logProc = null;
+      $("logStartBtn").hidden = false;
+      $("logStopBtn").hidden = true;
+    }
+  }
+
+  async function stopLogcat() {
+    if (!logProc) return;
+    try { await (logProc.kill ? logProc.kill() : logProc.close()); } catch (_) {}
+    logProc = null;
+  }
+
+  $("logStartBtn").addEventListener("click", () => run(startLogcat));
+  $("logStopBtn").addEventListener("click", () => run(stopLogcat));
+  $("logClearBtn").addEventListener("click", () => { $("logBox").textContent = ""; });
+  
   /* ---------- Progress steps + agent ---------- */
   const AGENT_URL = "agent/lemon-agent";
   const AGENT_PATH = "/data/local/tmp/lemon-agent";
