@@ -722,15 +722,17 @@
 
   /* ---------- Tabs ---------- */
   function setTab(t) {
-    for (const [name, tab, panel] of [["patch", "tabPatch", "panelPatch"], ["mods", "tabMods", "panelMods"]]) {
+    for (const [name, tab, panel] of [["patch", "tabPatch", "panelPatch"], ["mods", "tabMods", "panelMods"], ["logs", "tabLogs", "panelLogs"]]) {
       $(tab).setAttribute("aria-selected", String(name === t));
       $(panel).hidden = name !== t;
     }
     say("");
     if (t === "mods") renderMods();
+    if (t === "logs") fillLogPackages();
   }
   $("tabPatch").addEventListener("click", () => setTab("patch"));
   $("tabMods").addEventListener("click", () => setTab("mods"));
+  $("tabLogs").addEventListener("click", () => setTab("logs"));
   $("rescanBtn").addEventListener("click", () => { if (!scan.running) scanGames(); });
 
   /* ---------- Logs tab ---------- */
