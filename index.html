@@ -799,15 +799,24 @@
       return;
     }
 
-    const none = adb.subprocess && adb.subprocess.noneProtocol;
-    if (!none || !none.spawn) {
-      logBoxAppend("This connection can't stream logs.");
+    let proc = null;
+    let spawnErr = null;
+    const p = adb.subprocess;
+    try {
+      if (p && p.noneProtocol && p.noneProtocol.spawn) proc = await p.noneProtocol.spawn(cmd);
+      else if (p && p.shellProtocol && p.shellProtocol.spawn) proc = await p.shellProtocol.spawn(cmd);
+      else if (p && p.spawn) proc = await p.spawn(cmd);
+    } catch (e) {
+      spawnErr = e;
+    }
+
+    if (!proc) {
+      logBoxAppend(`This connection can't stream logs.${spawnErr ? " (" + ((spawnErr && spawnErr.message) || spawnErr) + ")" : ""}`);
       $("logStartBtn").hidden = false;
       $("logStopBtn").hidden = true;
       return;
     }
 
-    const proc = await none.spawn(cmd);
     logProc = proc;
     const stream = proc.output || proc.stdout;
     const reader = stream.getReader();
@@ -834,7 +843,7 @@
       $("logStopBtn").hidden = true;
     }
   }
-
+  
   async function stopLogcat() {
     if (!logProc) return;
     try { await (logProc.kill ? logProc.kill() : logProc.close()); } catch (_) {}
