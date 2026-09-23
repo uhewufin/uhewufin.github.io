@@ -1262,7 +1262,9 @@
       try { model = String(await adb.getProp("ro.product.model")).trim(); } catch (_) {}
       if (!model) model = (adb.banner && adb.banner.model) || device.name || "Unknown device";
 
-      $("devLine").textContent = `${model}, serial ${device.serial || "unknown"}`;
+      $("deviceLine").textContent = `${model}, serial ${device.serial || "unknown"}`;
+      $("deviceLine").hidden = false;
+      $("disconnectTopBtn").hidden = false;
       games = [];
       selected = null;
       setState("connected", "Connected", "ok");
