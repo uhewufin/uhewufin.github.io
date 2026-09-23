@@ -1290,8 +1290,8 @@
 
   connectBtn.addEventListener("click", connect);
   $("retryBtn").addEventListener("click", () => { goIdle(); });
-  $("disconnectBtn").addEventListener("click", disconnect);
-
+  $("disconnectTopBtn").addEventListener("click", disconnect);
+  
   if (navigator.usb) {
     navigator.usb.addEventListener("disconnect", () => {
       if (app.dataset.state === "connected") {
