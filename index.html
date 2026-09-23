@@ -1083,20 +1083,24 @@
       catch (e) {
         throw new Error(`The loader files weren't found on the site (${e.message}). They're added when the site is deployed from GitHub.`);
       }
-      const repo = kind === "china"
-        ? "LemonLoader/MelonLoader.UnityDependencies.China"
-        : "LavaGang/MelonLoader.UnityDependencies";
+      
+      const WORKER_URL = "https://libunity-proxy.uhewufn.workers.dev";
+      const region = kind === "china" ? "china" : "global";
       const candidates = [fullVersion, version].filter((v, i, a) => v && a.indexOf(v) === i);
       let lib = null, triedUrls = [];
+
       for (const v of candidates) {
-        const localPath = `libunity/${kind === "china" ? "china/" : ""}${v}/libunity.so.arm64-v8a`;
-        const remoteUrl = `https://github.com/${repo}/releases/download/${v}/libunity.so.arm64-v8a`;
+        const localPath = `libunity/${region === "china" ? "china/" : ""}${v}/libunity.so.arm64-v8a`;
         try { lib = await fetchBlob(localPath); break; } catch (_) { triedUrls.push(localPath); }
-        try { lib = await fetchBlob(remoteUrl); break; } catch (_) { triedUrls.push(remoteUrl); }
       }
+
       if (!lib) {
-        throw new Error(`Couldn't get a Unity library for ${fullVersion}. Tried: ${triedUrls.join(", ")}. Add ${fullVersion} (or ${version}) to libunity-versions.txt and let the site rebuild.`);
+        for (const v of candidates) {
+          const workerUrl = `${WORKER_URL}?version=${encodeURIComponent(v)}&region=${region}`;
+          try { lib = await fetchBlob(workerUrl); break; } catch (_) { triedUrls.push(workerUrl); }
+        }
       }
+      
       st.set("download", "done");
 
       current = "upload";
