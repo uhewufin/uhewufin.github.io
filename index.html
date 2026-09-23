@@ -1062,8 +1062,8 @@
       if (d.sawFail || st.get("unity-version") !== "done" || !d.meta.unity) {
         throw new Error(d.lines.length ? d.lines[d.lines.length - 1] : "Couldn't read the Unity version.");
       }
-      const [version, kind] = d.meta.unity.split(" ");
-
+      const [fullVersion, version, kind] = d.meta.unity.split(" ");
+      
       current = "download";
       st.set("download", "running");
       let melon;
