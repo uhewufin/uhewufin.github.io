@@ -173,14 +173,16 @@
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
+<header class="topbar">
+  <div class="topbar-inner">
     <div class="brand"><i aria-hidden="true"></i>LemonLoader Web</div>
     <div id="deviceLine" class="chip" hidden></div>
     <span id="chip" class="chip" role="status" aria-live="polite">Not connected</span>
     <button id="disconnectTopBtn" class="small" hidden>Disconnect</button>
-  </header>
+  </div>
+</header>
 
+<div class="wrap">
   <main id="app" data-state="idle">
     <section class="card" data-view="idle">
       <h1>Connect your headset</h1>
