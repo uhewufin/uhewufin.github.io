@@ -478,12 +478,24 @@
           // A zip lists its file names at the end, so only the tail needs searching.
           const cnt = await sh(`for f in ${q(dir)}/*.apk; do tail -c 8388608 "$f"; done | grep -c libil2cpp`);
           if (parseInt(cnt.trim(), 10) > 0) {
-            const dataDir = `/sdcard/Android/data/${item.pkg}/files`;
-            const ls = await sh(`ls -1 ${q(dataDir)} 2>/dev/null`);
-            const names = ls.split("\n").map((s) => s.trim()).filter(Boolean);
-            const patched = names.some((n) => /^(mods|melonloader|lemonloader)$/i.test(n));
-            const modsName = names.find((n) => /^mods$/i.test(n)) || "Mods";
-            games.push({ pkg: item.pkg, patched, modsDir: `${dataDir}/${modsName}` });
+            const melonDir = `/sdcard/MelonLoader/${item.pkg}`;
+            const melonLs = (await sh(`ls -1 ${q(melonDir)} 2>/dev/null`))
+              .split("\n").map((s) => s.trim()).filter(Boolean);
+            const melonMods = melonLs.find((n) => /^mods$/i.test(n));
+
+            let patched = melonLs.length > 0;
+            let modsDir = `${melonDir}/${melonMods || "Mods"}`;
+
+            if (!patched) {
+              const dataDir = `/sdcard/Android/data/${item.pkg}/files`;
+              const names = (await sh(`ls -1 ${q(dataDir)} 2>/dev/null`))
+                .split("\n").map((s) => s.trim()).filter(Boolean);
+              const oldMods = names.find((n) => /^mods$/i.test(n));
+              patched = names.some((n) => /^(mods|melonloader|lemonloader)$/i.test(n));
+              modsDir = `${dataDir}/${oldMods || "Mods"}`;
+            }
+
+            games.push({ pkg: item.pkg, patched, modsDir });
           }
         } catch (e) {
           console.error("Skipping", item.pkg, e);
