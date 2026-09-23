@@ -1086,16 +1086,16 @@
       const repo = kind === "china"
         ? "LemonLoader/MelonLoader.UnityDependencies.China"
         : "LavaGang/MelonLoader.UnityDependencies";
-      const libUrl = `https://github.com/${repo}/releases/download/${version}/libunity.so.arm64-v8a`;
-      // Look for a copy on this site first; browsers usually can't download it from GitHub directly.
-      const libPath = `libunity/${kind === "china" ? "china/" : ""}${version}/libunity.so.arm64-v8a`;
-      let lib;
-      try { lib = await fetchBlob(libPath); }
-      catch (_) {
-        try { lib = await fetchBlob(libUrl); }
-        catch (e) {
-          throw new Error(`The Unity library for ${version} isn't on this site, and your browser couldn't download it from GitHub (${e.message}). Add ${version} to libunity-versions.txt in the repo and let the site rebuild.`);
-        }
+      const candidates = [fullVersion, version].filter((v, i, a) => v && a.indexOf(v) === i);
+      let lib = null, triedUrls = [];
+      for (const v of candidates) {
+        const localPath = `libunity/${kind === "china" ? "china/" : ""}${v}/libunity.so.arm64-v8a`;
+        const remoteUrl = `https://github.com/${repo}/releases/download/${v}/libunity.so.arm64-v8a`;
+        try { lib = await fetchBlob(localPath); break; } catch (_) { triedUrls.push(localPath); }
+        try { lib = await fetchBlob(remoteUrl); break; } catch (_) { triedUrls.push(remoteUrl); }
+      }
+      if (!lib) {
+        throw new Error(`Couldn't get a Unity library for ${fullVersion}. Tried: ${triedUrls.join(", ")}. Add ${fullVersion} (or ${version}) to libunity-versions.txt and let the site rebuild.`);
       }
       st.set("download", "done");
 
