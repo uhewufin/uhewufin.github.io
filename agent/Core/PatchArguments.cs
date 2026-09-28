@@ -24,7 +24,10 @@ public class PatchArguments
     /// <summary>A single libunity.so file for this game's Unity version (used instead of downloading it).</summary>
     public string LibUnityPath { get; internal set; } = "";
 
-    public PatchArguments(string targetApkPath, string libraryApkPath, string[] extraSplitApkPaths, string outputApkDirectory, string tempDirectory, string melonDataPath, string unityDependenciesPath, AssetRipper.Primitives.UnityVersion? unityVersion, string packageName, bool isSplit, string libUnityPath = "")
+    /// <summary>libfrida-gadget.so to inject as a dependency of libil2cpp.so.</summary>
+    public string GadgetPath { get; internal set; } = "";
+
+    public PatchArguments(string targetApkPath, string libraryApkPath, string[] extraSplitApkPaths, string outputApkDirectory, string tempDirectory, string melonDataPath, string unityDependenciesPath, AssetRipper.Primitives.UnityVersion? unityVersion, string packageName, bool isSplit, string libUnityPath = "", string gadgetPath = "")
     {
         TargetApkPath = targetApkPath;
         LibraryApkPath = libraryApkPath;
@@ -37,5 +40,6 @@ public class PatchArguments
         PackageName = packageName;
         IsSplit = isSplit;
         LibUnityPath = libUnityPath;
+        GadgetPath = gadgetPath;
     }
 }
