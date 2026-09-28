@@ -58,9 +58,8 @@ public class Patcher(PatchArguments arguments, IPatchLogger logger)
 
             (string Id, IPatchStep Step)[] steps =
             [
-                ("unity-version", new DetectUnityVersion()),
-                ("unity-libs", new ProvideUnityLibs()),
-                ("loader-files", new ExtractDependencies()),
+                ("gadget", new ProvideGadget()),
+                ("inject", new InjectGadgetDependency()),
                 ("manifest", new PatchManifest()),
                 ("repack", new RepackAPK()),
                 ("certificate", new GenerateCertificate()),
@@ -75,9 +74,6 @@ public class Patcher(PatchArguments arguments, IPatchLogger logger)
 
                 if (!step.Run(this))
                     throw new Exception($"The \"{id}\" step failed.");
-
-                if (id == "unity-version")
-                    Logger.Log($"Unity version: {Args.UnityVersion}");
 
                 Marker(id, "done");
             }
