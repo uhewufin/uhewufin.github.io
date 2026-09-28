@@ -5,7 +5,7 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    - cron: "0 6 * * 1"   # weekly, to pick up new LemonLoader releases
+    - cron: "0 6 * * 1"   # weekly, to pick up new Frida gadget releases
 
 permissions:
   contents: read
@@ -42,19 +42,19 @@ jobs:
           -o out/agent
 
       # Browsers usually can't download GitHub release files directly, so the site hosts a copy.
-      - name: Fetch the LemonLoader files
-        env:
-          GH_TOKEN: ${{ github.token }}
+      # Frida gadget releases ship .xz compressed; decompress here since neither the browser
+      # nor the AOT-compiled agent can do that themselves.
+      - name: Fetch and decompress the Frida gadget
         run: |
-          TAG=$(gh api repos/LemonLoader/MelonLoader/releases --paginate \
-            --jq '.[] | select(any(.assets[]?; .name | startswith("melon_data"))) | .tag_name' | sed -n 1p)
-          echo "Using LemonLoader release: $TAG"
+          TAG=$(curl -s https://api.github.com/repos/frida/frida/releases/latest | grep -o '"tag_name": *"[^"]*"' | cut -d'"' -f4)
+          echo "Using Frida release: $TAG"
           test -n "$TAG"
-          mkdir -p payload_dl site/payload
-          gh release download "$TAG" --repo LemonLoader/MelonLoader --pattern 'melon_data*' --dir payload_dl
-          ls -l payload_dl
-          cp "$(ls payload_dl/melon_data* | sed -n 1p)" site/payload/melon_data.zip
-          echo "$TAG" > site/payload/version.txt
+          URL="https://github.com/frida/frida/releases/download/${TAG}/frida-gadget-${TAG#v}-android-arm64.so.xz"
+          curl -L -o gadget.so.xz "$URL"
+          unxz gadget.so.xz
+          mkdir -p site/gadget
+          mv gadget.so site/gadget/libfrida-gadget.so
+          echo "$TAG" > site/gadget/version.txt
 
       - name: Assemble the site
         run: |
