@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>LemonLoader Web</title>
+<title>Frida Web</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;700&display=swap" rel="stylesheet">
@@ -176,7 +176,7 @@
 <body>
 <header class="topbar">
   <div class="topbar-inner">
-    <div class="brand"><i aria-hidden="true"></i>LemonLoader Web</div>
+    <div class="brand"><i aria-hidden="true"></i>Frida Web</div>
     <div id="deviceLine" class="chip" hidden></div>
     <span id="chip" class="chip" role="status" aria-live="polite">Not connected</span>
     <button id="disconnectTopBtn" class="small" hidden>Disconnect</button>
@@ -222,6 +222,18 @@
           <button id="rescanBtn" class="small">Rescan</button>
         </div>
         <p>These are the IL2CPP Unity games installed on your headset. Patching makes a patched copy on the headset but doesn't install it yet. Games marked Patched are ready for mods.</p>
+
+        <div class="card add" style="margin-bottom:16px">
+          <h2 style="font-size:15px">Frida gadget</h2>
+          <div class="filerow">
+            <button id="gadgetPickBtn" class="small" type="button">Choose a gadget file</button>
+            <span id="gadgetPickedName" class="sub">Using the site's default gadget</span>
+          </div>
+          <input id="gadgetFileInput" type="file" hidden accept=".so">
+          <p class="warn" id="gadgetWarn" hidden></p>
+          <button id="gadgetClearBtn" class="small" hidden>Use the default instead</button>
+        </div>
+
         <div id="patchList" class="card list"></div>
 
         <div class="card add" id="patchCard" hidden>
@@ -314,13 +326,13 @@
       </div>
     </section>
     <section class="card" style="margin-top:16px">
-      <h2>About LemonLoader Web</h2>
-      <p>LemonLoader Web is a free, unofficial tool for Meta Quest headsets. It patches Unity games so they can load LemonLoader mods, and it manages those mods, all from your browser over a USB cable. There is nothing to install on your headset or your computer.</p>
+      <h2>About Frida Web</h2>
+      <p>Frida Web is a free, unofficial tool for Meta Quest headsets. It patches Unity games so they can load Frida-based mods, and it manages those mods, all from your browser over a USB cable. There is nothing to install on your headset or your computer.</p>
       <p>Everything runs over WebUSB. Your game files move only between your browser and your headset, and the site never uploads them anywhere.</p>
 
       <h2 style="margin-top:20px">What you can do</h2>
       <ul style="margin:0 0 16px;padding-left:18px;color:var(--muted)">
-        <li>Find the IL2CPP Unity games on your headset that LemonLoader can patch.</li>
+        <li>Find the IL2CPP Unity games on your headset that this tool can patch.</li>
         <li>Patch a game and install the patched copy.</li>
         <li>Add, remove, name, enable and disable mods for patched games.</li>
       </ul>
@@ -333,7 +345,7 @@
       </ul>
 
       <h2>Good to know</h2>
-      <p>Installing a patched game replaces the original, which can erase its save data. LemonLoader Web is an independent project and isn't affiliated with the LemonLoader or MelonLoader teams. It's open source on <a href="https://github.com/uhewufin/uhewufin.github.io">GitHub</a>, and the patcher is based on the LemonLoader installer.</p>
+      <p>Installing a patched game replaces the original, which can erase its save data. Frida Web is an independent project and isn't affiliated with the Frida, LemonLoader, or MelonLoader teams. It's open source on <a href="https://github.com/uhewufin/uhewufin.github.io">GitHub</a>. Its manifest-editing and APK-signing code originated from the LemonLoader installer's open-source Core library (GPL-3.0); the mod-loading mechanism itself uses Frida instead.</p>
     </section>
     <section class="card" style="margin-top:16px">
       <h2>Frequently asked questions</h2>
@@ -349,13 +361,13 @@
       </ul>
 
       <h3 style="font-size:16px;margin:16px 0 6px">Why isn't my game listed on the Patch tab?</h3>
-      <p>LemonLoader only works with Unity games built with IL2CPP. Games made with other engines, or with Unity's older Mono setup, aren't listed. A game also won't appear in the Mods tab until it has been patched and launched once.</p>
+      <p>This tool only works with Unity games built with IL2CPP. Games made with other engines, or with Unity's older Mono setup, aren't listed. A game appears in the Mods tab as soon as patching finishes; you don't need to launch it first.</p>
 
       <h3 style="font-size:16px;margin:16px 0 6px">The patch failed. What went wrong?</h3>
-      <p>There are two common causes. The first is a problem on this website or with your setup: reload the page and try again, keep the headset awake and plugged in, and make sure it has free storage of at least the size of the game, because patching makes a full copy. The second is the game itself: some games protect or obfuscate their files, which can stop patching or stop LemonLoader from working. If the error mentions the Unity version or a missing file, this is the likely cause, and that game may not be patchable. If the same error keeps happening across several games, please report it on the project's GitHub page and include the error text.</p>
+      <p>There are two common causes. The first is a problem on this website or with your setup: reload the page and try again, keep the headset awake and plugged in, and make sure it has free storage of at least the size of the game, because patching makes a full copy. The second is the game itself: some games protect or obfuscate their files, which can stop patching or stop the gadget from loading. If the error mentions the Unity version or a missing file, this is the likely cause, and that game may not be patchable. If the same error keeps happening across several games, please report it on the project's GitHub page and include the error text.</p>
 
       <h3 style="font-size:16px;margin:16px 0 6px">The game takes a long time to load after patching. Is it broken?</h3>
-      <p>Probably not. The first launch of a patched game is slow, sometimes several minutes, because LemonLoader is setting itself up for that game. Let it finish and don't force close it. The first launch can also crash, so if it does, open the game again. Later launches are much faster.</p>
+      <p>Possibly not. Some games take longer to start the first time after patching. Let it finish and don't force close it. If the first launch crashes, open the game again, if it still crashes the same way every time, the game itself may not be compatible with this tool.</p>
 
       <h3 style="font-size:16px;margin:16px 0 6px">Will patching a game erase my saves?</h3>
       <p>It can. The patched copy is signed differently from the original, so Android has to remove the original game before installing it, and that can delete the game's local save data. Games that keep progress in an online account are not affected.</p>
@@ -479,22 +491,9 @@
           // A zip lists its file names at the end, so only the tail needs searching.
           const cnt = await sh(`for f in ${q(dir)}/*.apk; do tail -c 8388608 "$f"; done | grep -c libil2cpp`);
           if (parseInt(cnt.trim(), 10) > 0) {
-            const melonDir = `/sdcard/MelonLoader/${item.pkg}`;
-            const melonLs = (await sh(`ls -1 ${q(melonDir)} 2>/dev/null`))
-              .split("\n").map((s) => s.trim()).filter(Boolean);
-            const melonMods = melonLs.find((n) => /^mods$/i.test(n));
-
-            let patched = melonLs.length > 0;
-            let modsDir = `${melonDir}/${melonMods || "Mods"}`;
-
-            if (!patched) {
-              const dataDir = `/sdcard/Android/data/${item.pkg}/files`;
-              const names = (await sh(`ls -1 ${q(dataDir)} 2>/dev/null`))
-                .split("\n").map((s) => s.trim()).filter(Boolean);
-              const oldMods = names.find((n) => /^mods$/i.test(n));
-              patched = names.some((n) => /^(mods|melonloader|lemonloader)$/i.test(n));
-              modsDir = `${dataDir}/${oldMods || "Mods"}`;
-            }
+            const modsDir = `/sdcard/Android/data/${item.pkg}/files/mods`;
+            const ls = await sh(`ls -1 ${q(modsDir)} 2>/dev/null`);
+            const patched = ls.trim().length > 0 || (await sh(`test -d ${q(modsDir)} && echo yes`)).trim() === "yes";
 
             games.push({ pkg: item.pkg, patched, modsDir });
           }
@@ -693,10 +692,10 @@
     $("addBtn").disabled = !t;
 
     const warn = $("warn");
-    const notDll = !!f && !/\.dll$/i.test(f.name);
-    warn.hidden = !notDll;
-    if (notDll) {
-      warn.textContent = "LemonLoader mods are .dll files. This file may not load as a mod on its own, though you can still add it.";
+    const notJs = !!f && !/\.js$/i.test(f.name);
+    warn.hidden = !notJs;
+    if (notJs) {
+      warn.textContent = "Mods for this tool are .js files. This file may not load as a mod on its own, though you can still add it.";
     }
   }
 
@@ -747,6 +746,28 @@
   $("tabMods").addEventListener("click", () => setTab("mods"));
   $("tabLogs").addEventListener("click", () => setTab("logs"));
   $("rescanBtn").addEventListener("click", () => { if (!scan.running) scanGames(); });
+
+  /* ---------- Optional custom gadget ---------- */
+  let customGadget = null; // a File, or null to use the site's default
+
+  $("gadgetPickBtn").addEventListener("click", () => $("gadgetFileInput").click());
+  $("gadgetFileInput").addEventListener("change", () => {
+    const f = $("gadgetFileInput").files[0];
+    if (!f) return;
+    customGadget = f;
+    $("gadgetPickedName").textContent = f.name;
+    $("gadgetClearBtn").hidden = false;
+    const warn = $("gadgetWarn");
+    warn.hidden = /\.so$/i.test(f.name);
+    if (!warn.hidden) warn.textContent = "This doesn't look like a .so file. It'll still be used, but double-check it's a real Frida gadget build for arm64.";
+  });
+  $("gadgetClearBtn").addEventListener("click", () => {
+    customGadget = null;
+    $("gadgetFileInput").value = "";
+    $("gadgetPickedName").textContent = "Using the site's default gadget";
+    $("gadgetClearBtn").hidden = true;
+    $("gadgetWarn").hidden = true;
+  });
 
   /* ---------- Logs tab ---------- */
   let logProc = null;
@@ -1071,10 +1092,12 @@
 
       current = "download";
       st.set("download", "running");
-      let gadget;
-      try { gadget = await fetchBlob("gadget/libfrida-gadget.so"); }
-      catch (e) {
-        throw new Error(`The Frida gadget wasn't found on the site (${e.message}). It's added when the site is deployed from GitHub.`);
+      let gadget, loaderScript;
+      try {
+        gadget = customGadget || await fetchBlob("gadget/libfrida-gadget.so");
+        loaderScript = await fetchBlob("loader/_loader.js");
+      } catch (e) {
+        throw new Error(`A required file wasn't found on the site (${e.message}). It's added when the site is deployed from GitHub.`);
       }
       st.set("download", "done");
 
@@ -1083,6 +1106,11 @@
       const mk = (await sh(`mkdir -p ${q(inputs)}`)).trim();
       if (mk) throw new Error(mk);
       await pushFile(`${inputs}/libfrida-gadget.so`, gadget);
+
+      const modsDir = `/sdcard/Android/data/${g.pkg}/files/mods`;
+      const mkMods = (await sh(`mkdir -p ${q(modsDir)}`)).trim();
+      if (mkMods) throw new Error(mkMods);
+      await pushFile(`${modsDir}/_loader.js`, loaderScript);
       st.set("upload", "done");
 
       current = "copy-apk";
@@ -1163,7 +1191,7 @@
       if (!/success/i.test(iOut)) throw new Error(iOut || "Install failed.");
       st.set("install", "done");
 
-      say(`Installed the patched ${gameName(g.pkg)}. Open it once so LemonLoader can set itself up. The first launch is slow and can crash, so if it does, just open it again.`, "ok");
+      say(`Installed the patched ${gameName(g.pkg)}. Open it to try it out; if it crashes on first launch, just open it again.`, "ok");
     } catch (e) {
       st.set(current, "fail");
       $("installErr").textContent = String((e && e.message) || e);
@@ -1228,7 +1256,7 @@
 
       setState("connecting", "Connecting", "busy");
       const connection = await device.connect();
-      const credentialStore = new libs.Store("LemonLoader Web");
+      const credentialStore = new libs.Store("Frida Web");
       const transport = await libs.AdbDaemonTransport.authenticate({
         serial: device.serial,
         connection,
