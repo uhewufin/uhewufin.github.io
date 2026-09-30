@@ -1,5 +1,7 @@
 using LemonAgent;
 using MelonLoader.Installer.Core;
+using QuestPatcher.Axml;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
 
 // Commands the website runs on the headset:
@@ -48,6 +50,54 @@ static int Hello(string[] a)
     Console.WriteLine($"Arguments: {string.Join(" ", a)}");
     Step("info", "done");
     return 0;
+}
+
+static int Inspect(Dictionary<string, List<string>> options)
+{
+    Step("inspect", "start");
+    string? apk = Get(options, "apk");
+    if (apk == null || !File.Exists(apk))
+    {
+        Step("inspect", "fail", "The APK file wasn't found.");
+        return 1;
+    }
+
+    try
+    {
+        using FileStream zipStream = File.OpenRead(apk);
+        using ZipArchive archive = new(zipStream, ZipArchiveMode.Read);
+
+        ZipArchiveEntry? manifestEntry = archive.Entries.FirstOrDefault(e => e.Name == "AndroidManifest.xml");
+        if (manifestEntry == null)
+        {
+            Step("inspect", "fail", "No AndroidManifest.xml found in that file.");
+            return 1;
+        }
+
+        using MemoryStream ms = new();
+        using (Stream es = manifestEntry.Open()) es.CopyTo(ms);
+        ms.Position = 0;
+
+        AxmlElement manifest = AxmlLoader.LoadDocument(ms);
+        string package = manifest.Attributes.FirstOrDefault(a => a.Name == "package")?.Value as string ?? "";
+        bool hasIl2cpp = archive.Entries.Any(e => e.FullName == "lib/arm64-v8a/libil2cpp.so");
+
+        if (string.IsNullOrEmpty(package))
+        {
+            Step("inspect", "fail", "Couldn't read a package name from the manifest.");
+            return 1;
+        }
+
+        Console.WriteLine($"@package {package}");
+        Console.WriteLine($"@il2cpp {(hasIl2cpp ? "yes" : "no")}");
+        Step("inspect", "done");
+        return 0;
+    }
+    catch (Exception ex)
+    {
+        Step("inspect", "fail", ex.Message.Replace('\n', ' ').Replace('\r', ' '));
+        return 1;
+    }
 }
 
 static int Patch(Dictionary<string, List<string>> options)
@@ -116,6 +166,7 @@ try
     return command switch
     {
         "hello" => Hello(args),
+        "inspect" => Inspect(options),
         "patch" => Patch(options),
         _ => Fail($"Unknown command: {command}"),
     };
