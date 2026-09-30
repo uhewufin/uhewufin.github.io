@@ -186,18 +186,18 @@
 <div class="wrap">
   <main id="app" data-state="idle">
     <section class="card" data-view="idle">
-      <h1>Connect your headset</h1>
-      <p>Plug your headset into the device you're using right now, then choose Connect headset and pick your Quest from the list.</p>
+      <h1>Connect your Android device</h1>
+      <p>Plug your Android device into the device you're using right now, then choose Connect device and pick it from the list. It's really just Android underneath, so this works on a Quest, a phone, or a tablet.</p>
       <div class="roles">
         <b>Host</b><span>This device, the one showing this page</span>
-        <b>Receiver</b><span>Your Quest headset</span>
+        <b>Receiver</b><span>Your Android device — a Quest, a phone, whatever's plugged in</span>
       </div>
-      <div class="supported">Supported: Quest 1, Quest 2, Quest 3, Quest 3S and Quest Pro. Other headsets aren't supported.</div>
+      <div class="supported">Tested on Quest 1, 2, 3, 3S and Pro, but it should work on any Android device with developer mode and USB debugging turned on, since that's all this actually needs.</div>
       <div class="actions">
         <button id="connectBtn" class="primary" disabled>Loading&hellip;</button>
       </div>
       <ul class="before">
-        <li>Turn on developer mode for your headset.</li>
+        <li>Turn on developer mode and USB debugging for your device.</li>
         <li>Use a USB cable that carries data, not a charge-only one.</li>
         <li>Close other ADB tools on your computer, since they hold the USB connection.</li>
         <li>Use Chrome or Edge on a computer. Firefox and Safari don't support WebUSB.</li>
@@ -205,8 +205,8 @@
     </section>
 
     <section class="card" data-view="connecting">
-      <h1><span class="pulse" aria-hidden="true"></span>Waiting for the headset</h1>
-      <p>Put the headset on and choose Allow on the USB debugging prompt. Tick Always allow to skip the prompt next time.</p>
+      <h1><span class="pulse" aria-hidden="true"></span>Waiting for the device</h1>
+      <p>Approve the USB debugging prompt on the device itself. Tick Always allow to skip the prompt next time.</p>
     </section>
 
     <section data-view="connected">
@@ -221,7 +221,7 @@
           <h1>Compatible games</h1>
           <button id="rescanBtn" class="small">Rescan</button>
         </div>
-        <p>These are the IL2CPP Unity games installed on your headset. Patching makes a patched copy on the headset but doesn't install it yet. Games marked Patched are ready for mods.</p>
+        <p>These are the IL2CPP Unity games installed on your device. Patching makes a patched copy on the device but doesn't install it yet. Games marked Patched are ready for mods.</p>
 
         <div class="card add" style="margin-bottom:16px">
           <h2 style="font-size:15px">Frida gadget</h2>
@@ -234,11 +234,31 @@
           <button id="gadgetClearBtn" class="small" hidden>Use the default instead</button>
         </div>
 
+        <div class="card add" style="margin-bottom:16px">
+          <h2 style="font-size:15px">Upload an APK</h2>
+          <p class="sub" style="margin-bottom:14px">Patch a game that isn't installed on the device, using the device only as the patch host.</p>
+          <div class="filerow">
+            <button id="apkPickBtn" class="small" type="button">Choose an APK</button>
+            <span id="apkPickedName" class="sub">No file chosen</span>
+          </div>
+          <input id="apkFileInput" type="file" hidden accept=".apk">
+          <p class="warn" id="apkWarn" hidden></p>
+          <div id="apkResult" hidden>
+            <div class="row">
+              <div class="grow">
+                <p class="ttl" id="apkResultName"></p>
+                <p class="sub mono" id="apkResultPkg"></p>
+              </div>
+              <button id="apkPatchBtn" class="small primary">Patch this APK</button>
+            </div>
+          </div>
+        </div>
+
         <div id="patchList" class="card list"></div>
 
         <div class="card add" id="patchCard" hidden>
           <h2 id="patchTitle">Patching</h2>
-          <p class="sub">This makes a patched copy of the game on your headset. Your installed game isn't touched and nothing is installed yet. Keep the headset awake and the cable connected.</p>
+          <p class="sub">This makes a patched copy of the game on your device. Your installed game isn't touched and nothing is installed yet. Keep the device awake and the cable connected.</p>
           <ol id="patchSteps" class="steps" aria-live="polite"></ol>
           <p class="warn" id="patchErr" hidden></p>
           <pre id="patchLog" class="log" hidden></pre>
@@ -253,7 +273,7 @@
 
         <div class="card add">
           <h2>Test the patch agent</h2>
-          <p>Copies a small test program to the headset and runs it. It only writes one temporary file.</p>
+          <p>Copies a small test program to the device and runs it. It only writes one temporary file.</p>
           <ol id="steps" class="steps" aria-live="polite"></ol>
           <pre id="agentLog" class="log" hidden></pre>
           <button id="testBtn" class="primary">Run agent test</button>
@@ -291,7 +311,7 @@
 
       <div id="panelLogs" role="tabpanel" aria-labelledby="tabLogs" hidden>
         <h1>Logs</h1>
-        <p>Streams your headset's logcat. Useful for seeing why a game crashed or hung.</p>
+        <p>Streams your device's logcat. Useful for seeing why a game crashed or hung.</p>
 
         <div class="tabs" role="tablist" aria-label="Log filter" style="margin-bottom:14px">
           <button class="tab" role="tab" id="logModeAll" aria-selected="true">All</button>
@@ -327,19 +347,19 @@
     </section>
     <section class="card" style="margin-top:16px">
       <h2>About Frida Web</h2>
-      <p>Frida Web is a free, unofficial tool for Meta Quest headsets. It patches Unity games so they can load Frida-based mods, and it manages those mods, all from your browser over a USB cable. There is nothing to install on your headset or your computer.</p>
-      <p>Everything runs over WebUSB. Your game files move only between your browser and your headset, and the site never uploads them anywhere.</p>
+      <p>Frida Web is a free, unofficial tool for Android devices, Quest headsets included, since a Quest is really just Android underneath. It patches Unity games so they can load Frida-based mods, and it manages those mods, all from your browser over a USB cable. There is nothing to install on your device or your computer.</p>
+      <p>Everything runs over WebUSB. Your game files move only between your browser and your device, and the site never uploads them anywhere.</p>
 
       <h2 style="margin-top:20px">What you can do</h2>
       <ul style="margin:0 0 16px;padding-left:18px;color:var(--muted)">
-        <li>Find the IL2CPP Unity games on your headset that this tool can patch.</li>
+        <li>Find the IL2CPP Unity games on your device that this tool can patch.</li>
         <li>Patch a game and install the patched copy.</li>
         <li>Add, remove, name, enable and disable mods for patched games.</li>
       </ul>
 
       <h2>What you need</h2>
       <ul style="margin:0 0 16px;padding-left:18px;color:var(--muted)">
-        <li>A Quest 1, Quest 2, Quest 3, Quest 3S or Quest Pro with developer mode turned on.</li>
+        <li>An Android device (a Quest, a phone, a tablet) with developer mode and USB debugging turned on.</li>
         <li>A USB cable that carries data, not just power.</li>
         <li>Chrome or Edge, since other browsers don't support WebUSB.</li>
       </ul>
@@ -350,12 +370,12 @@
     <section class="card" style="margin-top:16px">
       <h2>Frequently asked questions</h2>
 
-      <h3 style="font-size:16px;margin:16px 0 6px">My headset won't connect. What should I check?</h3>
+      <h3 style="font-size:16px;margin:16px 0 6px">My device won't connect. What should I check?</h3>
       <p>Work through these in order:</p>
       <ul style="margin:0 0 16px;padding-left:18px;color:var(--muted)">
-        <li><strong>Developer mode:</strong> it has to be turned on for your headset in the Meta Horizon phone app (you may need a free developer account). Without it, the headset never shows up in the list.</li>
-        <li><strong>USB debugging prompt:</strong> after you choose Connect headset, put the headset on and choose Allow. If you chose Don't allow, unplug and replug the cable and try again.</li>
-        <li><strong>Cable and port:</strong> use a cable that carries data, not a charge-only one, and plug the headset into the device that is showing this page.</li>
+        <li><strong>Developer mode:</strong> it has to be turned on for your device. On a Quest, that's done through the Meta Horizon phone app (you may need a free developer account). On a regular Android phone or tablet, it's the Developer options menu in Settings, with USB debugging turned on. Without it, the device never shows up in the list.</li>
+        <li><strong>USB debugging prompt:</strong> after you choose Connect device, approve the prompt on the device itself. If you chose Don't allow, unplug and replug the cable and try again.</li>
+        <li><strong>Cable and port:</strong> use a cable that carries data, not a charge-only one, and plug your Android device into the device that is showing this page.</li>
         <li><strong>Other programs:</strong> close other ADB tools on your computer, since only one program can use the connection at a time.</li>
         <li><strong>Browser:</strong> use Chrome or Edge. Firefox and Safari don't support WebUSB.</li>
       </ul>
@@ -364,7 +384,7 @@
       <p>This tool only works with Unity games built with IL2CPP. Games made with other engines, or with Unity's older Mono setup, aren't listed. A game appears in the Mods tab as soon as patching finishes; you don't need to launch it first.</p>
 
       <h3 style="font-size:16px;margin:16px 0 6px">The patch failed. What went wrong?</h3>
-      <p>There are two common causes. The first is a problem on this website or with your setup: reload the page and try again, keep the headset awake and plugged in, and make sure it has free storage of at least the size of the game, because patching makes a full copy. The second is the game itself: some games protect or obfuscate their files, which can stop patching or stop the gadget from loading. If the error mentions the Unity version or a missing file, this is the likely cause, and that game may not be patchable. If the same error keeps happening across several games, please report it on the project's GitHub page and include the error text.</p>
+      <p>There are two common causes. The first is a problem on this website or with your setup: reload the page and try again, keep the device awake and plugged in, and make sure it has free storage of at least the size of the game, because patching makes a full copy. The second is the game itself: some games protect or obfuscate their files, which can stop patching or stop the gadget from loading. If the error mentions the Unity version or a missing file, this is the likely cause, and that game may not be patchable. If the same error keeps happening across several games, please report it on the project's GitHub page and include the error text.</p>
 
       <h3 style="font-size:16px;margin:16px 0 6px">The game takes a long time to load after patching. Is it broken?</h3>
       <p>Possibly not. Some games take longer to start the first time after patching. Let it finish and don't force close it. If the first launch crashes, open the game again, if it still crashes the same way every time, the game itself may not be compatible with this tool.</p>
@@ -384,7 +404,7 @@
   let libs = null;
   let adb = null;
 
-  // Games found on the headset: { pkg, il2cpp, patched, modsDir }
+  // Games found on the device: { pkg, il2cpp, patched, modsDir }
   let games = [];
   let scan = { running: false, done: 0, total: 0, error: "" };
   let selected = null;
@@ -769,6 +789,51 @@
     $("gadgetWarn").hidden = true;
   });
 
+  /* ---------- Upload an APK to patch directly ---------- */
+  let uploadedApk = null; // { pkg, il2cpp, devicePath }
+
+  $("apkPickBtn").addEventListener("click", () => $("apkFileInput").click());
+  $("apkFileInput").addEventListener("change", () => run(async () => {
+    const f = $("apkFileInput").files[0];
+    if (!f) return;
+
+    $("apkPickedName").textContent = f.name;
+    $("apkResult").hidden = true;
+    $("apkWarn").hidden = true;
+    uploadedApk = null;
+
+    const safeName = f.name.replace(/[^A-Za-z0-9._-]/g, "_");
+    const devicePath = `${LEMON_DIR}/uploaded/${Date.now()}_${safeName}`;
+
+    await installAgent();
+    const mk = (await sh(`mkdir -p ${q(`${LEMON_DIR}/uploaded`)}`)).trim();
+    if (mk) throw new Error(mk);
+    await pushFile(devicePath, f);
+
+    const log = { hidden: true, textContent: "" }; // inspect doesn't need a visible log box
+    const st = { set() {}, get() { return "pending"; } };
+    const r = await runAgent(["inspect", "--apk", devicePath], st, log);
+    if (r.sawFail || !r.meta.package) {
+      throw new Error(r.lines.length ? r.lines[r.lines.length - 1] : "Couldn't read that APK.");
+    }
+
+    const isIl2cpp = r.meta.il2cpp === "yes";
+    if (!isIl2cpp) {
+      $("apkWarn").hidden = false;
+      $("apkWarn").textContent = "This doesn't look like an IL2CPP Unity APK. Patching it will likely fail, but you can still try.";
+    }
+
+    uploadedApk = { pkg: r.meta.package, il2cpp: isIl2cpp, devicePath };
+    $("apkResultName").textContent = f.name;
+    $("apkResultPkg").textContent = r.meta.package;
+    $("apkResult").hidden = false;
+  }));
+
+  $("apkPatchBtn").addEventListener("click", () => {
+    if (!uploadedApk) return;
+    run(() => patchGame({ pkg: uploadedApk.pkg, uploadedApkPath: uploadedApk.devicePath }));
+  });
+
   /* ---------- Logs tab ---------- */
   let logProc = null;
   let logMode = "all";
@@ -893,9 +958,9 @@
   const AGENT_PATH = "/data/local/tmp/lemon-agent";
   const TEST_STEPS = [
     { id: "download", label: "Download the agent" },
-    { id: "copy", label: "Copy it to the headset" },
+    { id: "copy", label: "Copy it to the device" },
     { id: "prepare", label: "Make it runnable" },
-    { id: "info", label: "Run it on the headset" },
+    { id: "info", label: "Run it on the device" },
   ];
   const STATE_TEXT = { pending: "", running: "Running", done: "Done", fail: "Failed" };
 
@@ -932,7 +997,7 @@
     const cmd = `${q(AGENT_PATH)} ${args.map(q).join(" ")} 2>&1`;
     const result = { code: null, sawFail: false, lines: [], meta: {} };
     const onLine = (line) => {
-      const meta = line.match(/^@(unity|output|result) (.*)$/);
+      const meta = line.match(/^@(unity|output|result|package|il2cpp) (.*)$/);
       if (meta) { result.meta[meta[1]] = meta[2]; return; }
       const m = line.match(/^@step (\S+) (start|done|fail)(?: (.*))?$/);
       if (m) {
@@ -1005,7 +1070,7 @@
       if (r.sawFail || (r.code !== null && r.code !== 0) || st.get("info") !== "done") {
         throw new Error(r.lines.length ? r.lines[r.lines.length - 1] : "The agent didn't finish.");
       }
-      say("The agent ran on your headset.", "ok");
+      say("The agent ran on your device.", "ok");
     } catch (e) {
       st.set(current, "fail");
       throw e;
@@ -1017,7 +1082,7 @@
     { id: "agent", label: "Set up the patch agent" },
     { id: "find-apk", label: "Find the game's files" },
     { id: "download", label: "Download the Frida gadget" },
-    { id: "upload", label: "Copy them to the headset" },
+    { id: "upload", label: "Copy them to the device" },
     { id: "copy-apk", label: "Copy the game files" },
     { id: "gadget", label: "Add the Frida gadget" },
     { id: "inject", label: "Wire up the gadget" },
@@ -1085,9 +1150,14 @@
 
       current = "find-apk";
       st.set("find-apk", "running");
-      const paths = (await sh(`pm path ${q(g.pkg)}`))
-        .split("\n").map((s) => s.trim()).filter((s) => s.startsWith("package:")).map((s) => s.slice(8));
-      if (!paths.length) throw new Error("Couldn't find the game's APK files.");
+      let paths;
+      if (g.uploadedApkPath) {
+        paths = [g.uploadedApkPath];
+      } else {
+        paths = (await sh(`pm path ${q(g.pkg)}`))
+          .split("\n").map((s) => s.trim()).filter((s) => s.startsWith("package:")).map((s) => s.slice(8));
+        if (!paths.length) throw new Error("Couldn't find the game's APK files.");
+      }
       st.set("find-apk", "done");
 
       current = "download";
@@ -1128,7 +1198,7 @@
       $("discardBtn").hidden = false;
       $("installBtn").hidden = false;
       $("installNote").hidden = false;
-      say(`Done. The patched game is on your headset at ${r.meta.output}. It isn't installed yet.`, "ok");
+      say(`Done. The patched game is on your device at ${r.meta.output}. It isn't installed yet.`, "ok");
     } catch (e) {
       if (st.get(current) !== "done") st.set(current, "fail");
       $("patchErr").textContent = String((e && e.message) || e);
@@ -1223,12 +1293,12 @@
   function describeError(e) {
     const msg = String((e && e.message) || e || "");
     if (/claimInterface|Unable to claim|in use|busy|access denied/i.test(msg)) {
-      return "Another program is using the headset. Close other ADB tools, or run adb kill-server on your computer, then try again.";
+      return "Another program is using the device. Close other ADB tools, or run adb kill-server on your computer, then try again.";
     }
     if (/auth|denied|reject/i.test(msg)) {
-      return "The headset didn't accept the connection. Put the headset on, choose Allow on the USB debugging prompt, then try again.";
+      return "The device didn't accept the connection. Approve the USB debugging prompt on the device, then try again.";
     }
-    return msg || "Something went wrong while connecting. Unplug the headset, plug it back in, and try again.";
+    return msg || "Something went wrong while connecting. Unplug the device, plug it back in, and try again.";
   }
 
   function resetSession() {
@@ -1302,14 +1372,14 @@
     navigator.usb.addEventListener("disconnect", () => {
       if (app.dataset.state === "connected") {
         resetSession();
-        fail("Headset disconnected", "The USB connection was lost. Plug the headset back in and connect again.");
+        fail("Device disconnected", "The USB connection was lost. Plug it back in and connect again.");
       }
     });
   }
 
   // Load the ADB library up front so the click handler can open the picker immediately.
   loadLibs()
-    .then(() => { connectBtn.disabled = false; connectBtn.textContent = "Connect headset"; })
+    .then(() => { connectBtn.disabled = false; connectBtn.textContent = "Connect device"; })
     .catch((e) => {
       console.error(e);
       fail("Couldn't load the connection library", "Check your internet connection and reload the page.");
