@@ -229,7 +229,7 @@
             <button id="gadgetPickBtn" class="small" type="button">Choose a gadget file</button>
             <span id="gadgetPickedName" class="sub">Using the site's default gadget</span>
           </div>
-          <input id="gadgetFileInput" type="file" hidden accept=".so">
+          <input id="gadgetFileInput" type="file" hidden accept=".so,.xz">
           <p class="warn" id="gadgetWarn" hidden></p>
           <button id="gadgetClearBtn" class="small" hidden>Use the default instead</button>
         </div>
@@ -771,16 +771,44 @@
   let customGadget = null; // a File, or null to use the site's default
 
   $("gadgetPickBtn").addEventListener("click", () => $("gadgetFileInput").click());
-  $("gadgetFileInput").addEventListener("change", () => {
+  let xzLibPromise = null;
+  function loadXz() {
+    if (!xzLibPromise) xzLibPromise = import("https://cdn.jsdelivr.net/npm/xz-decompress@0.2/+esm");
+    return xzLibPromise;
+  }
+
+  $("gadgetFileInput").addEventListener("change", () => run(async () => {
     const f = $("gadgetFileInput").files[0];
     if (!f) return;
-    customGadget = f;
-    $("gadgetPickedName").textContent = f.name;
-    $("gadgetClearBtn").hidden = false;
+
     const warn = $("gadgetWarn");
-    warn.hidden = /\.so$/i.test(f.name);
-    if (!warn.hidden) warn.textContent = "This doesn't look like a .so file. It'll still be used, but double-check it's a real Frida gadget build for arm64.";
-  });
+    warn.hidden = true;
+
+    if (/\.xz$/i.test(f.name)) {
+      $("gadgetPickedName").textContent = `Decompressing ${f.name}...`;
+      try {
+        const { XzReadableStream } = await loadXz();
+        const decompressed = new Response(new XzReadableStream(f.stream()));
+        const blob = await decompressed.blob();
+        customGadget = blob;
+        const shortName = f.name.replace(/\.xz$/i, "");
+        $("gadgetPickedName").textContent = `${shortName} (decompressed)`;
+        warn.hidden = /\.so$/i.test(shortName);
+        if (!warn.hidden) warn.textContent = "This doesn't look like a .so file once decompressed. It'll still be used, but double-check it's a real Frida gadget build for arm64.";
+      } catch (e) {
+        customGadget = null;
+        $("gadgetPickedName").textContent = "Using the site's default gadget";
+        throw new Error(`Couldn't decompress ${f.name}: ${(e && e.message) || e}`);
+      }
+    } else {
+      customGadget = f;
+      $("gadgetPickedName").textContent = f.name;
+      warn.hidden = /\.so$/i.test(f.name);
+      if (!warn.hidden) warn.textContent = "This doesn't look like a .so file. It'll still be used, but double-check it's a real Frida gadget build for arm64.";
+    }
+
+    $("gadgetClearBtn").hidden = false;
+  }));
   $("gadgetClearBtn").addEventListener("click", () => {
     customGadget = null;
     $("gadgetFileInput").value = "";
