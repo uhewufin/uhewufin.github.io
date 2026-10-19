@@ -1,5 +1,5 @@
 ok so I wrote all of this so you can learn how to script and stuff
-
+                                                                                                                            
 ← on the left are sections, on the right are subsections →
 
 /sec basic syntax
