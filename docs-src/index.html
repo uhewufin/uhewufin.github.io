@@ -120,10 +120,10 @@ function renderBlock(raw){
       html += '<blockquote>' + qs.map(inlineFormat).join('<br>') + '</blockquote>';
       continue;
     }
-    if(/^\*\s+/.test(line)){
+    if(/^[*]\s+/.test(line)){
       flush();
       const items = [];
-      while(i < lines.length && /^\*\s+/.test(lines[i])){ items.push(lines[i].replace(/^\*\s+/, '')); i++; }
+      while(i < lines.length && /^[*]\s+/.test(lines[i])){ items.push(lines[i].replace(/^[*]\s+/, '')); i++; }
       html += '<ul>' + items.map(it => '<li>' + inlineFormat(it) + '</li>').join('') + '</ul>';
       continue;
     }
@@ -262,13 +262,13 @@ function renderDoc(raw){
   });
 }
 
-fetch('docs.txt')
+fetch('https://raw.githubusercontent.com/uhewufin/uhewufin.github.io/main/docs-src/docs.txt')
   .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
   .then(renderDoc)
   .catch(err => {
     const box = document.getElementById('errorBox');
     box.style.display = 'block';
-    box.textContent = "Couldn't load docs.txt (" + err.message + "). Make sure docs.txt sits in the same folder as index.html, and that you're viewing this through a local/static server rather than opening the file directly (some browsers block file:// fetches).";
+    box.textContent = "Couldn't load docs.txt (" + err.message + "). Make sure docs.txt sits in the same folder as index.html, and that you're viewing this through a local/static server rather than the filesystem.";
   });
 </script>
 </body>
