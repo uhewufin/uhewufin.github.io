@@ -58,10 +58,12 @@ jobs:
 
       - name: Assemble the site
         run: |
-          mkdir -p site/agent site/loader
+          mkdir -p site/agent site/loader site/docs
           cp index.html site/index.html
           cp out/agent/lemon-agent site/agent/lemon-agent
           cp loader/_loader.js site/loader/_loader.js
+          cp docs-src/index.html site/docs/index.html
+          cp docs-src/docs.txt site/docs/docs.txt
           ls -lR site
 
       - uses: actions/upload-pages-artifact@v3
