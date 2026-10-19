@@ -1,1 +1,33 @@
+ok so I wrote all of this so you can learn how to script and stuff
+← on the left are sections, on the right are subsections →
 
+/sec basic syntax
+
+/sec variables
+so variables basically have a name, and a value
+
+so for `local var = 5`, `var` is the name of the variable, and `5` is the value of the variable
+you don't need spaces, however you need a space between `local` and the name of the variable, (e.g. `local var=5` is valid, `localvar=5` is not)
+a common misconception about variables is you don't need to put `local`, I'll explain what `local` does later in this section
+
+so, like how parts have parents, variables have parents too
+so for example
+
+if you do
+```
+if true then
+  local a = 5
+end
+print(a)
+```
+it wont be able to print `a`, as when you do `local` inside of the `if` block, the variable can only be used in that `if` block
+but now if you do
+```
+if true then
+  a = 5
+end
+print(a)
+```
+it *will* be able to print `a`, as because we didn't use `local`, the variable is now global instead of local to only the `if` block
+
+also, you can only have letters and numbers in the variable name, and if you're using numbers in the variable name then the first letter can't be a number, so `a1` works, but `1a` doesn't work
