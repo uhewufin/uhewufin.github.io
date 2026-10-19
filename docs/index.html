@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roblox Scripting Docs</title>
+<style>
+  :root{
+    --bg:#f7f7f9; --panel:#ffffff; --border:#e2e2e8; --text:#1c1c22;
+    --muted:#6b6b76; --accent:#5b5bd6; --accent-bg:#eceaff; --code-bg:#eef0f4;
+    --quote-bar:#5b5bd6;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#17171c; --panel:#1f1f26; --border:#303039; --text:#ececf1;
+      --muted:#9a9aa5; --accent:#8d8dff; --accent-bg:#2a2a45; --code-bg:#26262f;
+      --quote-bar:#8d8dff;
+    }
+  }
+  *{box-sizing:border-box;}
+  html{ scroll-padding-top:66px; }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  header{
+    position:sticky; top:0; z-index:20; height:56px;
+    background:var(--panel); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; padding:0 16px;
+  }
+  header h1{ font-size:15px; margin:0; font-weight:600; }
+
+  .layout{ display:grid; grid-template-columns: 210px 1fr 210px; align-items:start; }
+  nav.side{
+    position:sticky; top:56px; align-self:start;
+    max-height:calc(100vh - 56px); overflow-y:auto; padding:16px 10px;
+  }
+  nav.side h2{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:4px 8px 8px; }
+  nav.side a{
+    display:block; padding:7px 10px; border-radius:7px; color:var(--text); text-decoration:none; font-size:13.5px;
+    margin-bottom:2px; cursor:pointer; border:1px solid transparent;
+  }
+  nav.side a:hover{ background:var(--accent-bg); }
+  nav.side a.active{ background:var(--accent-bg); border-color:var(--accent); font-weight:600; }
+  nav.side a.sub{ color:var(--muted); }
+  nav.side .empty{ padding:7px 10px; font-size:13px; color:var(--muted); }
+
+  main{ padding:24px 20px 60px; min-width:0; max-width:680px; margin:0 auto; }
+  main section.block{ margin-bottom:34px; scroll-margin-top:66px; }
+  main div.sub-block{ scroll-margin-top:66px; margin-bottom:22px; }
+  main h2{ font-size:20px; margin:0 0 10px; border-bottom:1px solid var(--border); padding-bottom:8px; }
+  main h3{ font-size:16px; margin:22px 0 8px; }
+  main p{ line-height:1.6; font-size:14.5px; margin:0 0 12px; }
+  main blockquote{
+    margin:0 0 12px; padding:6px 14px; border-left:3px solid var(--quote-bar);
+    background:var(--accent-bg); border-radius:0 6px 6px 0; font-size:14px;
+  }
+  main ul{ margin:0 0 12px; padding-left:22px; font-size:14.5px; line-height:1.6; }
+  main code{ background:var(--code-bg); padding:1px 5px; border-radius:4px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px; }
+  main pre{ background:var(--code-bg); border:1px solid var(--border); border-radius:8px; padding:12px 14px; overflow-x:auto; margin:0 0 12px; }
+  main pre code{ background:none; padding:0; }
+  #welcome{ font-size:17px; font-weight:600; margin-bottom:6px; }
+  #intro{ font-size:15px; margin-bottom:28px; }
+  #outro{ border-top:1px solid var(--border); padding-top:18px; margin-top:10px; color:var(--muted); }
+  #errorBox{ display:none; margin:24px; padding:14px 16px; border:1px solid var(--border); border-radius:8px; background:var(--accent-bg); font-size:14px; }
+
+  @media (max-width: 760px){
+    .layout{ display:block; }
+    nav.side{
+      position:sticky; top:56px; max-height:none; overflow:visible;
+      white-space:nowrap; overflow-x:auto; display:flex; gap:4px; padding:10px; z-index:15;
+      background:var(--bg); border-bottom:1px solid var(--border);
+    }
+    nav.side h2{ display:none; }
+    nav.side a{ display:inline-block; flex:0 0 auto; margin-bottom:0; }
+    main{ padding:18px 16px 60px; max-width:none; }
+  }
+</style>
+</head>
+<body>
+<header><h1>Docs</h1></header>
+<div id="errorBox"></div>
+<div class="layout">
+  <nav class="side" id="sectionNav"><h2>Sections</h2></nav>
+  <main id="content"></main>
+  <nav class="side" id="subNav"><h2>Subsections</h2></nav>
+</div>
+
+<script>
+function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function inlineFormat(line){
+  let t = escapeHtml(line);
+  t = t.replace(/`([^`]+)`/g, (m,p1)=>'<code>'+p1+'</code>');
+  t = t.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+  t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  t = t.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  return t;
+}
+
+function renderBlock(raw){
+  const codeBlocks = [];
+  let text = raw.replace(/```([\s\S]*?)```/g, (m, p1) => {
+    codeBlocks.push(p1.replace(/^\n/, '').replace(/\n$/, ''));
+    return '\u0000CB' + (codeBlocks.length - 1) + '\u0000';
+  });
+  const lines = text.split('\n');
+  let html = '', buf = [];
+  function flush(){ if(buf.length){ html += '<p>' + buf.map(inlineFormat).join('<br>') + '</p>'; buf = []; } }
+  let i = 0;
+  while(i < lines.length){
+    const line = lines[i];
+    if(line.trim() === ''){ flush(); i++; continue; }
+    const cb = line.match(/^\u0000CB(\d+)\u0000$/);
+    if(cb){ flush(); html += '<pre><code>' + escapeHtml(codeBlocks[+cb[1]]) + '</code></pre>'; i++; continue; }
+    if(/^>\s?/.test(line)){
+      flush();
+      const qs = [];
+      while(i < lines.length && /^>\s?/.test(lines[i])){ qs.push(lines[i].replace(/^>\s?/, '')); i++; }
+      html += '<blockquote>' + qs.map(inlineFormat).join('<br>') + '</blockquote>';
+      continue;
+    }
+    if(/^\*\s+/.test(line)){
+      flush();
+      const items = [];
+      while(i < lines.length && /^\*\s+/.test(lines[i])){ items.push(lines[i].replace(/^\*\s+/, '')); i++; }
+      html += '<ul>' + items.map(it => '<li>' + inlineFormat(it) + '</li>').join('') + '</ul>';
+      continue;
+    }
+    buf.push(line);
+    i++;
+  }
+  flush();
+  return html;
+}
+
+function parseDocs(raw){
+  const lines = raw.replace(/\r\n/g, '\n').split('\n');
+  const doc = { welcome: '', intro: '', sections: [], outro: '' };
+  let mode = 'welcome', buf = [], curSection = null, curSub = null;
+  function commit(){
+    const text = buf.join('\n').replace(/\n+$/, '');
+    buf = [];
+    if(mode === 'welcome') doc.welcome = text;
+    else if(mode === 'intro') doc.intro = text;
+    else if(mode === 'outro') doc.outro = text;
+    else if(mode === 'sec') curSection.text = text;
+    else if(mode === 'sub') curSub.text = text;
+  }
+  for(const line of lines){
+    const secMatch = line.match(/^\/sec\s+(.+)$/);
+    const subMatch = line.match(/^\/sub\s+(.+)$/);
+    if(line.trim() === '/int'){ commit(); mode = 'intro'; continue; }
+    if(line.trim() === '/out'){ commit(); mode = 'outro'; continue; }
+    if(secMatch){ commit(); curSection = { title: secMatch[1].trim(), text: '', subs: [] }; doc.sections.push(curSection); mode = 'sec'; continue; }
+    if(subMatch){ commit(); curSub = { title: subMatch[1].trim(), text: '' }; if(curSection) curSection.subs.push(curSub); mode = 'sub'; continue; }
+    buf.push(line);
+  }
+  commit();
+  return doc;
+}
+
+let doc = null;
+let activeIndex = -1;
+
+function setActiveSection(index){
+  if(index === activeIndex || !doc.sections[index]) return;
+  activeIndex = index;
+  document.querySelectorAll('#sectionNav a').forEach((a, i) => a.classList.toggle('active', i === index));
+  const subNav = document.getElementById('subNav');
+  subNav.innerHTML = '<h2>Subsections</h2>';
+  const subs = doc.sections[index].subs;
+  if(subs.length === 0){
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'No subsections';
+    subNav.appendChild(empty);
+    return;
+  }
+  subs.forEach((sub, subi) => {
+    const a = document.createElement('a');
+    a.className = 'sub';
+    a.textContent = sub.title;
+    a.href = '#sub-' + index + '-' + subi;
+    subNav.appendChild(a);
+  });
+}
+
+function renderDoc(raw){
+  doc = parseDocs(raw);
+  const content = document.getElementById('content');
+  const sectionNav = document.getElementById('sectionNav');
+  content.innerHTML = '';
+  sectionNav.innerHTML = '<h2>Sections</h2>';
+
+  if(doc.welcome){
+    const w = document.createElement('div');
+    w.id = 'welcome';
+    w.innerHTML = inlineFormat(doc.welcome);
+    content.appendChild(w);
+  }
+  if(doc.intro){
+    const intro = document.createElement('div');
+    intro.id = 'intro';
+    intro.innerHTML = renderBlock(doc.intro);
+    content.appendChild(intro);
+  }
+
+  doc.sections.forEach((sec, si) => {
+    const secId = 'section-' + si;
+    const secEl = document.createElement('section');
+    secEl.className = 'block';
+    secEl.id = secId;
+    secEl.innerHTML = '<h2>' + inlineFormat(sec.title) + '</h2>' + renderBlock(sec.text);
+    content.appendChild(secEl);
+
+    sec.subs.forEach((sub, subi) => {
+      const subEl = document.createElement('div');
+      subEl.className = 'sub-block';
+      subEl.id = 'sub-' + si + '-' + subi;
+      subEl.innerHTML = '<h3>' + inlineFormat(sub.title) + '</h3>' + renderBlock(sub.text);
+      content.appendChild(subEl);
+    });
+
+    const secLink = document.createElement('a');
+    secLink.textContent = sec.title;
+    secLink.href = '#' + secId;
+    secLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      setActiveSection(si);
+      document.getElementById(secId).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    sectionNav.appendChild(secLink);
+  });
+
+  if(doc.outro){
+    const outro = document.createElement('div');
+    outro.id = 'outro';
+    outro.innerHTML = renderBlock(doc.outro);
+    content.appendChild(outro);
+  }
+
+  if(doc.sections.length){
+    setActiveSection(0);
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if(entry.isIntersecting){
+          const idx = Array.from(document.querySelectorAll('section.block')).indexOf(entry.target);
+          if(idx !== -1) setActiveSection(idx);
+        }
+      });
+    }, { rootMargin: '-56px 0px -70% 0px', threshold: 0 });
+    document.querySelectorAll('section.block').forEach(el => io.observe(el));
+  }
+
+  document.querySelectorAll('#subNav a').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.getElementById(a.getAttribute('href').slice(1));
+      if(target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+}
+
+fetch('docs.txt')
+  .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+  .then(renderDoc)
+  .catch(err => {
+    const box = document.getElementById('errorBox');
+    box.style.display = 'block';
+    box.textContent = "Couldn't load docs.txt (" + err.message + "). Make sure docs.txt sits in the same folder as index.html, and that you're viewing this through a local/static server rather than opening the file directly (some browsers block file:// fetches).";
+  });
+</script>
+</body>
+</html>
