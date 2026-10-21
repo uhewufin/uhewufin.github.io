@@ -60,6 +60,10 @@ button:disabled{opacity:.35;cursor:default}
 .row input[type=range]{flex:1}
 .row span{width:42px;text-align:right;font-size:12px;color:var(--sub)}
 .card .go{width:100%;margin-top:4px}
+.clip{display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 0;border-top:1px solid var(--line)}
+.clip:first-child{border-top:none}
+.clip .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.clip button{padding:2px 7px;font-size:11px}
 footer{color:var(--sub);font-size:11.5px;margin-top:18px;line-height:1.6}
 </style>
 </head>
@@ -125,8 +129,9 @@ footer{color:var(--sub);font-size:11.5px;margin-top:18px;line-height:1.6}
     <div class="card">
       <h3>slice / stitch</h3>
       <button class="go danger" id="delGo" disabled>delete selection</button>
-      <button class="go" id="insGo" disabled style="margin-top:6px">insert another file at selection start</button>
+      <button class="go" id="insGo" disabled style="margin-top:6px">add audio clip</button>
       <input type="file" id="file2" accept="audio/*" style="display:none">
+      <div id="clipList"></div>
     </div>
   </div>
 
@@ -138,6 +143,7 @@ footer{color:var(--sub);font-size:11.5px;margin-top:18px;line-height:1.6}
 const AC = new (window.AudioContext||window.webkitAudioContext)();
 let oggEncoder = null;
 let data = null, sr = 44100, buf = null, history = null;
+let clips = [];
 let selStart = 0, selEnd = 0, src = null, playing = false, playStartT = 0, playOffset = 0, playEnd = 0;
 
 const cv = document.getElementById('cv');
@@ -174,8 +180,9 @@ async function load(file){
   const r = await decodeToMono(file);
   data = r.mono.slice(); sr = r.sr;
   selStart=0; selEnd=0; history=null;
+  clips = [{name:file.name, start:0, length:data.length}];
   drop.textContent = file.name; drop.classList.add('has');
-  rebuild(); draw(); enable(true); updateSelInputs();
+  rebuild(); draw(); enable(true); updateSelInputs(); renderClips();
 }
 
 function resampleLinear(src, ratio){ // ratio = out/in is NOT this; here newLen = floor(src.length*ratio)
@@ -215,13 +222,66 @@ function splice(start,end,newArr){
   out.set(before,0); out.set(newArr,before.length); out.set(after,before.length+newArr.length);
   data = out;
   selStart = before.length; selEnd = before.length+newArr.length;
+  adjustClips(start,end,newArr.length);
+}
+function adjustClips(start,end,newLen){
+  const delta = newLen-(end-start);
+  const before = clips.filter(c=>c.start+c.length<=start);
+  const after = clips.filter(c=>c.start>=end).map(c=>({...c,start:c.start+delta}));
+  const overlap = clips.filter(c=>!(c.start+c.length<=start||c.start>=end));
+  let mid = [];
+  if(newLen>0){
+    const same = overlap.length===1 && overlap[0].start===start && overlap[0].length===end-start;
+    mid = [{name: same?overlap[0].name:(overlap.length?'edited clip':'clip'), start, length:newLen}];
+  }
+  clips = [...before, ...mid, ...after];
+  renderClips();
+}
+function renderClips(){
+  const el = document.getElementById('clipList');
+  if(!el) return;
+  if(!clips.length){ el.innerHTML=''; return; }
+  el.innerHTML = clips.map((c,i)=>'<div class="clip"><span class="nm">'+c.name+'</span>'+
+    '<button data-i="'+i+'" data-dir="-1" '+(i===0?'disabled':'')+'>\u25B2</button>'+
+    '<button data-i="'+i+'" data-dir="1" '+(i===clips.length-1?'disabled':'')+'>\u25BC</button>'+
+    '<button data-i="'+i+'" data-rm="1">\u2715</button></div>').join('');
+  el.querySelectorAll('button').forEach(b=>{
+    b.onclick = ()=>{ const i=parseInt(b.dataset.i); if(b.dataset.rm) removeClip(i); else moveClip(i, parseInt(b.dataset.dir)); };
+  });
+}
+function swapAdjacent(i,j){
+  const a=clips[i], b=clips[j];
+  const segA = data.slice(a.start, a.start+a.length);
+  const segB = data.slice(b.start, b.start+b.length);
+  const before = data.slice(0, a.start);
+  const after = data.slice(b.start+b.length);
+  const merged = new Float32Array(before.length+segB.length+segA.length+after.length);
+  merged.set(before,0);
+  merged.set(segB, before.length);
+  merged.set(segA, before.length+segB.length);
+  merged.set(after, before.length+segB.length+segA.length);
+  data = merged;
+  clips[i] = {name:b.name, start:a.start, length:b.length};
+  clips[j] = {name:a.name, start:a.start+b.length, length:a.length};
+}
+function moveClip(i,dir){
+  const j=i+dir; if(j<0||j>=clips.length) return;
+  snapshot();
+  swapAdjacent(Math.min(i,j), Math.min(i,j)+1);
+  rebuild(); draw(); updateSelInputs(); renderClips();
+}
+function removeClip(i){
+  snapshot();
+  const c = clips[i];
+  splice(c.start, c.start+c.length, new Float32Array(0));
+  rebuild(); draw(); updateSelInputs();
 }
 
-function snapshot(){ history = {data:data.slice(), selStart, selEnd}; document.getElementById('undo').disabled=false; }
+function snapshot(){ history = {data:data.slice(), selStart, selEnd, clips:clips.map(c=>({...c}))}; document.getElementById('undo').disabled=false; }
 document.getElementById('undo').onclick = ()=>{
   if(!history) return;
-  data = history.data; selStart=history.selStart; selEnd=history.selEnd;
-  rebuild(); draw(); updateSelInputs(); document.getElementById('undo').disabled=true;
+  data = history.data; selStart=history.selStart; selEnd=history.selEnd; clips=history.clips;
+  rebuild(); draw(); updateSelInputs(); renderClips(); document.getElementById('undo').disabled=true;
 };
 
 function rebuild(){
@@ -369,9 +429,14 @@ async function insertFile(file){
   const r = await decodeToMono(file);
   let ins = r.mono;
   if(r.sr !== sr) ins = resampleLinear(ins, sr/r.sr);
-  const at = selEnd>selStart?selStart:data.length;
   snapshot();
-  splice(at,at,ins); rebuild(); draw(); updateSelInputs();
+  const start = data.length;
+  const merged = new Float32Array(data.length+ins.length);
+  merged.set(data,0); merged.set(ins,data.length);
+  data = merged;
+  clips.push({name:file.name, start, length:ins.length});
+  selStart=start; selEnd=data.length;
+  rebuild(); draw(); updateSelInputs(); renderClips();
 }
 
 function downloadBlob(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); }
