@@ -65,7 +65,7 @@ jobs:
           cp docs-src/index.html site/docs/index.html
           cp docs-src/docs.txt site/docs/docs.txt
           cp waveform-src/index.html site/waveform
-          cp waveform-src/assets site/waveform/assets
+          cp -r waveform-src/assets site/waveform/assets
           ls -lR site
 
       - uses: actions/upload-pages-artifact@v3
